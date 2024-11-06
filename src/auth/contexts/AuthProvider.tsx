@@ -5,6 +5,7 @@ import { useLogin } from "../hooks/useLogin";
 import { useLogout } from "../hooks/useLogout";
 import { useUserInfo } from "../hooks/useUserInfo";
 import { UserInfo } from "../types/userInfo";
+import { Navigate, useNavigate } from "react-router-dom";
 
 interface AuthContextInterface {
   hasRole: (roles?: string[]) => {};
@@ -24,6 +25,7 @@ type AuthProviderProps = {
 
 const AuthProvider = ({ children }: AuthProviderProps) => {
   const [authKey, setAuthKey] = useLocalStorage<string>("authkey", "");
+  const navigate = useNavigate();
   
   const { isLoggingIn, login } = useLogin();
   const {isAngelbrokingLoggingIn,angelBrokingLogin} = useAngelbrokingLogin();
@@ -59,6 +61,8 @@ const handleAngelBrokingLogin = async (clientCode:string,password:string,totp:st
 
   const handleLogout = async () => {
     setAuthKey("");
+    localStorage.setItem('authkey','');
+    navigate(`/${process.env.PUBLIC_URL}`, { replace: true });
   };
 
   return (

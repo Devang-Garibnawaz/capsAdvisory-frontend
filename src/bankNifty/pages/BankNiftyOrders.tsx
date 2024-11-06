@@ -177,7 +177,7 @@ const BankNiftyOrders = () => {
             setNextDisable(true);
           else
           setNextDisable(false);
-      }, [dpDate]);
+    }, [dpDate]);
 
     const fetchRecords = async () => {
         const ordersData = await FetchOrdersDataService(dpDate!);

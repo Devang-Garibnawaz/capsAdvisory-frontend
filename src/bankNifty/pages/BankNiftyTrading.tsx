@@ -45,6 +45,11 @@ const BankNiftyTrading = () =>{
 
     const fetchExpiryDates = async() =>{
       const expiryList = await getBankNiftyExpiryList();
+      expiryList.sort((a, b) => {
+        const dateA = new Date(a.split('-').reverse().join('-')).getTime();
+        const dateB = new Date(b.split('-').reverse().join('-')).getTime();
+        return dateA - dateB;
+      });
       setExpiryDateList(expiryList);
     } 
 

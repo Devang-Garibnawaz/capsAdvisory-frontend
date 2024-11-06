@@ -2,7 +2,7 @@ import {getBaseUrl} from '../../http/globalUrl'
 
 const BASE_URL = getBaseUrl();
 const GET_SYMBOL_TOKEN_LIST ='orders/getSymbolToken';
-const GET_OPTION_CHAIN_LIST ='orders/getOptionChainData';
+const GET_OPTION_CHAIN_LIST ='orders/getOptionChainDataNSE';
 const GET_FRVP_COUNT = 'orders/getPrevData';
 const GET_ORDERS_DATA = 'orders';
 
@@ -66,7 +66,7 @@ export const FetchOrdersDataService = async (date:Date,symbol:string = '') => {
         console.log('Error fetching data:', error);
         throw new Error('Failed to fetch data');
       }
-  };
+};
 
 
 

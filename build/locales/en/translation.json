@@ -11,8 +11,10 @@
         "userManagement": "Users",
         "intersectManagement":"Intersect",
         "BankNiftyTrading":"BankNifty Trading",
+        "CrudeoilTrading":"Crudeoil Trading",
         "AngelBrokingLogin":"Broker Login",
         "LogsManagement":"Logs List",
+        "LoginUsersManagement":"Login Users",
         "JobsManagement":"Jobs List",
         "moneyfluxStocksManagement":"MF Stocks List",
         "pnl":"Profit And Loss"

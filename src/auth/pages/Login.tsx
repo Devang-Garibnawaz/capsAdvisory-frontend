@@ -28,7 +28,12 @@ const Login = () => {
           localStorage.setItem('email', email);
           localStorage.setItem('clientId', data.clientId);
           localStorage.setItem('pinNumber', data.pinNumber);
-          navigate(`/${process.env.PUBLIC_URL}/admin`, { replace: true });
+          if(data.role === 'user'){
+            navigate(`/${process.env.PUBLIC_URL}/angel-broking-login`, { replace: true });
+          }else{
+            navigate(`/${process.env.PUBLIC_URL}/admin`, { replace: true });
+          }
+          
         }
         else{
           snackbar.error(data.message);
@@ -38,8 +43,17 @@ const Login = () => {
   };
   useEffect(() =>{
     const token = localStorage.getItem('authkey');
-    if(token && token == ""){
-      navigate(`/${process.env.PUBLIC_URL}/admin`, { replace: true });
+    if(token && token != ""){
+      const arrayToken = token?.split('.');
+      const tokenPayload = arrayToken && JSON.parse(atob(arrayToken[1]));
+      if(tokenPayload){
+        if(tokenPayload.role === 'user'){
+          navigate(`/${process.env.PUBLIC_URL}/angel-broking-login`, { replace: true });
+        }else{
+          navigate(`/${process.env.PUBLIC_URL}/admin`, { replace: true });
+        }
+      }
+      
     }
     
   },[])

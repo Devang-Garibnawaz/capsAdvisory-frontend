@@ -21,6 +21,7 @@ import { CheckBrokerStatusService } from "../../auth/hooks/useAngelBrokingLogin"
 import { useEffect, useState } from "react";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
 import { CircularProgress } from "@mui/material";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
 
 type AdminDrawerProps = {
   collapsed: boolean;
@@ -29,57 +30,66 @@ type AdminDrawerProps = {
   onSettingsToggle: () => void;
 };
 
-export const menuItems = [
-  {
-    icon: WaterFallChartIcon,
-    key: "admin.drawer.menu.BankNiftyTrading",
-    path: "/admin/banknifty-trading",
-  },
-  // {
-  //   icon: Money,
-  //   key: "admin.drawer.menu.moneyfluxStocksManagement",
-  //   path: "/admin/moneyflux-stocks-management",
-  // },
-  // {
-  //   icon: Insights,
-  //   key: "admin.drawer.menu.pnl",
-  //   path: "/admin/pnl-report"
-  // },
-  {
-    icon: Login,
-    key: "admin.drawer.menu.AngelBrokingLogin",
-    path: "angel-broking-login",
-  },
-  // {
-  //   icon: Alarm,
-  //   key: "admin.drawer.menu.JobsManagement",
-  //   path: "/admin/jobs-management",
-  // },
-  {
-    icon: SpeakerNotes,
-    key: "admin.drawer.menu.LogsManagement",
-    path: "/admin/logs-management",
-  },
-  {
-    icon: Grading,
-    key: "admin.drawer.menu.BankNiftyOrders",
-    path: "/admin/orders",
-  }
-];
-
 const AdminDrawer = ({
   collapsed,
   mobileOpen,
   onDrawerToggle,
   onSettingsToggle,
 }: AdminDrawerProps) => {
-  const { userInfo } = useAuth();
+  const { logout, userInfo } = useAuth();
   const { t } = useTranslation();
   const [isStatusLoading, setIsStatusLoading] = useState(false);
   const [loginStatus, setLoginStatus] = useState(false);
+  const [userRole, setUserRole] = useState('user');
+  const [filteredMenuItems, setFilteredMenuItems] = useState<any>([]);
   const width = collapsed ? drawerCollapsedWidth : drawerWidth;
   const snackbar = useSnackbar();
-  
+
+  const getMenuItems = () => {
+    if(userRole === 'user'){
+      setFilteredMenuItems([
+      {
+        icon: Login,
+        key: "admin.drawer.menu.AngelBrokingLogin",
+        path: "angel-broking-login",
+      }
+      ]);
+    }else{
+      setFilteredMenuItems([
+        {
+          icon: WaterFallChartIcon,
+          key: "admin.drawer.menu.BankNiftyTrading",
+          path: "/admin/banknifty-trading",
+        },
+        {
+          icon: Grading,
+          key: "admin.drawer.menu.BankNiftyOrders",
+          path: "/admin/orders",
+        },
+        {
+          icon: WaterFallChartIcon,
+          key: "admin.drawer.menu.CrudeoilTrading",
+          path: "/admin/crudeoil-trading",
+        },
+        {
+          icon: Login,
+          key: "admin.drawer.menu.AngelBrokingLogin",
+          path: "angel-broking-login",
+        },
+        {
+          icon: SpeakerNotes,
+          key: "admin.drawer.menu.LogsManagement",
+          path: "/admin/logs-management",
+        },
+        {
+          icon: Grading,
+          key: "admin.drawer.menu.LoginUsersManagement",
+          path: "/admin/login-users"
+        }
+        ]);
+    }
+  };
+
   const fetchBrokerStatus = async () => {
     try {
       setIsStatusLoading(true);
@@ -98,15 +108,35 @@ const AdminDrawer = ({
     }
   };
 
+  const roleBaseMenu =async () =>{
+    const authToken = localStorage.getItem('authkey');
+    const arrayToken = authToken?.split('.');
+    const tokenPayload = arrayToken && JSON.parse(atob(arrayToken[1]));
+    if(tokenPayload){
+      setUserRole(tokenPayload.role);
+    }
+  }
+
   useEffect(() => {
     fetchBrokerStatus();
+    roleBaseMenu();
   },[])
+
+  useEffect(() =>{
+    getMenuItems();
+  },[userRole]);
+
+  const handleLogout = () => {
+    logout().catch(() =>
+      snackbar.error(t("common.errors.unexpected.subTitle"))
+    );
+  };
 
   const drawer = (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
       <Logo sx={{ display: "flex", p: 4 }} />
       <List component="nav" sx={{ px: 2 }}>
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item:any) => (
           <ListItem
             button
             component={NavLink}
@@ -136,7 +166,7 @@ const AdminDrawer = ({
       </List>
       <Box sx={{ flexGrow: 1 }} />
       <List component="nav" sx={{ p: 2 }}>
-        <ListItem
+        {/* <ListItem
           button
           component={NavLink}
           to={`/${process.env.PUBLIC_URL}/admin/profile`}
@@ -154,6 +184,19 @@ const AdminDrawer = ({
               }}
             />
           )}
+        </ListItem> */}
+        <ListItem button onClick={handleLogout}>
+          <ListItemAvatar>
+            <Avatar>
+              <ExitToAppIcon />
+            </Avatar>
+          </ListItemAvatar>
+          <ListItemText
+            primary={t("Logout")}
+            sx={{
+              display: collapsed ? "none" : "block",
+            }}
+          />
         </ListItem>
         <ListItem button onClick={onSettingsToggle}>
           <ListItemAvatar>

@@ -9,6 +9,10 @@ import SettingsIcon from "@material-ui/icons/Settings";
 import React, { useState } from "react";
 import Logo from "./Logo";
 import SettingsDrawer from "./SettingsDrawer";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
+import { useAuth } from "../../auth/contexts/AuthProvider";
+import { useSnackbar } from "../../core/contexts/SnackbarProvider";
+import { Navigate } from "react-router-dom";
 
 type BoxedLayoutProps = {
   children: React.ReactNode;
@@ -17,9 +21,20 @@ type BoxedLayoutProps = {
 const BoxedLayout = ({ children }: BoxedLayoutProps) => {
   const theme = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
-
+  const { logout, userInfo } = useAuth();
+  const snackbar = useSnackbar();
+  const token = localStorage.getItem('authkey');
+  
   const handleSettingsToggle = () => {
     setSettingsOpen(!settingsOpen);
+  };
+
+  const handleLogout = () => {
+    logout().then(()=>{
+      <Navigate to={`/${process.env.PUBLIC_URL}`} replace/>
+    }).catch((err:any) =>
+      snackbar.error(err)
+    );
   };
 
   return (
@@ -30,6 +45,13 @@ const BoxedLayout = ({ children }: BoxedLayoutProps) => {
       <AppBar color="transparent" position="relative">
         <Toolbar>
           <Box sx={{ flexGrow: 1 }} />
+          {token != '' && <IconButton
+            aria-label="logout"
+            component="span"
+            onClick={handleLogout}
+          >
+            <ExitToAppIcon />
+          </IconButton>}
           <IconButton
             aria-label="settings"
             component="span"

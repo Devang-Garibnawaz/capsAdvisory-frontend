@@ -41,8 +41,9 @@ const LogsManagement = lazy(()=> import("./logs/pages/LogsListing"));
 
 //moneyflux-stocks-management
 const BankNiftyTrading = lazy(() => import("./bankNifty/pages/BankNiftyTrading"));
+const CrudeOilTrading = lazy(() => import("./commodities/crudeOil/pages/CrudeOilTrading"));
 const BankNiftyOrders = lazy(() => import("./bankNifty/pages/BankNiftyOrders"));
-
+const LoginUsersManagement = lazy(() => import("./users/pages/loginUserManagement"));
 const AppRoutes = () => {
   return (
     <Routes basename={process.env.PUBLIC_URL}>
@@ -65,6 +66,8 @@ const AppRoutes = () => {
           }
         />
         <PrivateRoute path="banknifty-trading" element={<BankNiftyTrading />} />
+        <PrivateRoute path="crudeoil-trading" element={<CrudeOilTrading />} />
+        <PrivateRoute path="login-users" element={<LoginUsersManagement />} />
         <PrivateRoute path="logs-management" element={<LogsManagement/>}/>
         <PrivateRoute path="orders" element={<BankNiftyOrders/>}/>
         <PrivateRoute path="jobs-management" element={<JobsListing/>}/>

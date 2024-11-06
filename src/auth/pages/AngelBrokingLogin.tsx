@@ -10,7 +10,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material
 import { useFormik } from "formik";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Navigate, Link as RouterLink, useNavigate } from "react-router-dom";
 import * as Yup from "yup";
 import BoxedLayout from "../../core/components/BoxedLayout";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
@@ -33,7 +33,14 @@ const AngelBrokingLogin = () => {
   const BASE_URL = getBaseUrl();
 
   useEffect(() => {
-    fetchBrokerStatus();
+    const authkey = localStorage.getItem('authkey');
+    if(authkey ==='' || authkey === null){
+      navigate(`/${process.env.PUBLIC_URL}`, { replace: true });
+      return;
+    }else{
+      fetchBrokerStatus();
+    }
+    
   },[])
 
   const handleAuthentication = (clientCode: string, password: string,tOtp:string) => {
