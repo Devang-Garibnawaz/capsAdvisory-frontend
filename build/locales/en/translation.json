@@ -11,6 +11,7 @@
         "userManagement": "Users",
         "intersectManagement":"Intersect",
         "BankNiftyTrading":"BankNifty Trading",
+        "NiftyTrading":"Nifty Trading",
         "CrudeoilTrading":"Crudeoil Trading",
         "AngelBrokingLogin":"Broker Login",
         "LogsManagement":"Logs List",

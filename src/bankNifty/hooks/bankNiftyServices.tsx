@@ -2,7 +2,7 @@ import {getBaseUrl} from '../../http/globalUrl'
 
 const BASE_URL = getBaseUrl();
 const GET_SYMBOL_TOKEN_LIST ='orders/getSymbolToken';
-const GET_OPTION_CHAIN_LIST ='orders/getOptionChainDataNSE';
+const GET_OPTION_CHAIN_LIST ='orders/getOptionChainData';
 const GET_FRVP_COUNT = 'orders/getPrevData';
 const GET_ORDERS_DATA = 'orders';
 
@@ -21,7 +21,7 @@ export async function getSymbolTokenList(){
 export async function getBankNiftyExpiryList(){
 
     try {
-        const response = await fetch(`${BASE_URL}${GET_OPTION_CHAIN_LIST}?symbol=BANKNIFTY`);
+        const response = await fetch(`${BASE_URL}${GET_OPTION_CHAIN_LIST}?symbol=BANKNIFTY&index=NFO`);
         const json = await response.json();
         return [...json.data?.expiryDates?.monthEnd,...json.data?.expiryDates?.week];
     } catch (error) {

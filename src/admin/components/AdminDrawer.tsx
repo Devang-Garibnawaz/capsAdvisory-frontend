@@ -1,27 +1,24 @@
 import Avatar from "@material-ui/core/Avatar";
+import Badge from "@material-ui/core/Badge";
 import Box from "@material-ui/core/Box";
 import Drawer from "@material-ui/core/Drawer";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemAvatar from "@material-ui/core/ListItemAvatar";
 import ListItemText from "@material-ui/core/ListItemText";
-import BarChartIcon from "@material-ui/icons/BarChart";
-import WaterFallChartIcon from "@material-ui/icons/WaterfallChart";
-import PeopleIcon from "@material-ui/icons/People";
-import PersonIcon from "@material-ui/icons/Person";
+import { Grading, Login, SpeakerNotes } from "@material-ui/icons";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
 import SettingsIcon from "@material-ui/icons/Settings";
+import WaterFallChartIcon from "@material-ui/icons/WaterfallChart";
+import { CircularProgress } from "@mui/material";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../auth/contexts/AuthProvider";
+import { CheckBrokerStatusService } from "../../auth/hooks/useAngelBrokingLogin";
 import Logo from "../../core/components/Logo";
 import { drawerCollapsedWidth, drawerWidth } from "../../core/config/layout";
-import { Login, Money, SpeakerNotes, Grading } from "@material-ui/icons";
-import Badge from "@material-ui/core/Badge";
-import { CheckBrokerStatusService } from "../../auth/hooks/useAngelBrokingLogin";
-import { useEffect, useState } from "react";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
-import { CircularProgress } from "@mui/material";
-import ExitToAppIcon from "@material-ui/icons/ExitToApp";
 
 type AdminDrawerProps = {
   collapsed: boolean;
@@ -65,6 +62,11 @@ const AdminDrawer = ({
           icon: Grading,
           key: "admin.drawer.menu.BankNiftyOrders",
           path: "/admin/orders",
+        },
+        {
+          icon: WaterFallChartIcon,
+          key: "admin.drawer.menu.NiftyTrading",
+          path: "/admin/nifty-trading",
         },
         {
           icon: WaterFallChartIcon,

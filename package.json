@@ -53,6 +53,7 @@
     "react-scripts": "^5.0.1",
     "recharts": "^2.0.9",
     "source-map-explorer": "^2.5.2",
+    "tred-code-portal": "file:",
     "typescript": "^4.1.2",
     "web-vitals": "^1.0.1",
     "yarn": "^1.22.19",

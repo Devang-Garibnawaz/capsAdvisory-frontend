@@ -1,15 +1,15 @@
 
-import React, { useState, useRef, useEffect } from "react";
+import { Box, Button, Card, CardContent, CardHeader, CircularProgress, Grid, IconButton, MenuItem, TextField } from "@material-ui/core";
+import { ArrowBackIos, ArrowForwardIos } from "@material-ui/icons";
+import { DatePicker, LoadingButton } from "@material-ui/lab";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { GridColDef } from "@mui/x-data-grid";
+import React, { useEffect, useState } from "react";
 import AdminAppBar from "../../../admin/components/AdminAppBar";
 import AdminToolbar from "../../../admin/components/AdminToolbar";
-import { Box, Button, Card, CardContent, CardHeader, CircularProgress, Grid, IconButton, MenuItem, TextField } from "@material-ui/core";
 import { useSnackbar } from "../../../core/contexts/SnackbarProvider";
-import { CancelClientOrdersService, FetchClientOrdersDataService, getExpiryList, getStrikePriceList, postOrderPlace } from "../hooks/crudeoilServices";
 import ClientOrdersTable from "../components/ClientOrdersTable";
-import { GridColDef } from "@mui/x-data-grid";
-import { DatePicker, LoadingButton } from "@material-ui/lab";
-import { ArrowBackIos, ArrowForwardIos } from "@material-ui/icons";
-import RefreshIcon from "@mui/icons-material/Refresh";
+import { CancelClientOrdersService, FetchClientOrdersDataService, getExpiryList, getStrikePriceList, postOrderPlace } from "../hooks/crudeoilServices";
 
 const CrudeOilTrading = () => {
 
@@ -91,7 +91,7 @@ const CrudeOilTrading = () => {
       headerName: 'Action',
       width: 150,
       renderCell: (params) => (
-        params.row.cancelOrder ? 'Canceld Order' :
+        !params.row.activeOrder ? 'Canceld Order' :
         <Button 
           sx={{padding:"1px 6px", borderRadius:"5px"}}
           variant="outlined" 
@@ -216,8 +216,11 @@ const CrudeOilTrading = () => {
       setIsLoading(false);
       return;
     }
-
-    const result = await postOrderPlace(selectedStrikePrice, Number(selectedQuantity), Number(buyingAt), Number(targetPrice), Number(stoplossPrice), selectedExpiryOption);
+    const symbolToken = selectedStrikePrice.split('*')[0]; 
+    const symbol = selectedStrikePrice.split('*')[1];
+    console.log('symbolToken',symbolToken); 
+    console.log('symbol',symbol); 
+    const result = await postOrderPlace(symbolToken, Number(selectedQuantity), Number(buyingAt), Number(targetPrice), Number(stoplossPrice), selectedExpiryOption, symbol);
     if (result.status) {
       snackbar.success(result.message);
       fetchRecords();
@@ -289,7 +292,7 @@ const CrudeOilTrading = () => {
             >
               <MenuItem value={""}>None</MenuItem>
               {strikePriceList.map((item: any) => (
-                <MenuItem key={item.token} value={item.token}>{item.symbol.replace(/(\d{2}[A-Z]{3}\d{2})/, '$1 - ')}</MenuItem>
+                <MenuItem key={item.token} value={item.token+'*'+item.symbol}>{item.symbol}</MenuItem>
               ))}
             </TextField>
           }
