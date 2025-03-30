@@ -53,15 +53,20 @@ const AdminDrawer = ({
       ]);
     }else{
       setFilteredMenuItems([
-        {
-          icon: WaterFallChartIcon,
-          key: "admin.drawer.menu.BankNiftyTrading",
-          path: "/admin/banknifty-trading",
-        },
+        // {
+        //   icon: WaterFallChartIcon,
+        //   key: "admin.drawer.menu.BankNiftyTrading",
+        //   path: "/admin/banknifty-trading",
+        // },
+        // {
+        //   icon: Grading,
+        //   key: "admin.drawer.menu.BankNiftyOrders",
+        //   path: "/admin/orders",
+        // },
         {
           icon: Grading,
-          key: "admin.drawer.menu.BankNiftyOrders",
-          path: "/admin/orders",
+          key: "admin.drawer.menu.LoginUsersManagement",
+          path: "/admin/login-users"
         },
         {
           icon: WaterFallChartIcon,
@@ -70,9 +75,14 @@ const AdminDrawer = ({
         },
         {
           icon: WaterFallChartIcon,
-          key: "admin.drawer.menu.CrudeoilTrading",
-          path: "/admin/crudeoil-trading",
+          key: "admin.drawer.menu.BasketTrading",
+          path: "/admin/basket-trading",
         },
+        // {
+        //   icon: WaterFallChartIcon,
+        //   key: "admin.drawer.menu.CrudeoilTrading",
+        //   path: "/admin/crudeoil-trading",
+        // },
         {
           icon: Login,
           key: "admin.drawer.menu.AngelBrokingLogin",
@@ -82,11 +92,6 @@ const AdminDrawer = ({
           icon: SpeakerNotes,
           key: "admin.drawer.menu.LogsManagement",
           path: "/admin/logs-management",
-        },
-        {
-          icon: Grading,
-          key: "admin.drawer.menu.LoginUsersManagement",
-          path: "/admin/login-users"
         }
         ]);
     }

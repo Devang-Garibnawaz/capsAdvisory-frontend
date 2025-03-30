@@ -26,6 +26,7 @@ const Register = () => {
       fullName: "",
       clientId: "",
       pinNumber: "",
+      totpSecret:"",
       password:""
     },
     validationSchema: Yup.object({
@@ -41,6 +42,8 @@ const Register = () => {
       pinNumber: Yup.string()
       .max(20, t("common.validations.max", { size: 20 }))
       .required(t("common.validations.required")),
+      totpSecret: Yup.string()
+      .required(t("common.validations.required")),
       password: Yup.string()
         .min(8, t("common.validations.min", { size: 8 }))
         .required(t("common.validations.required")),
@@ -51,7 +54,6 @@ const Register = () => {
   const handleRegister = async (values: Partial<UserInfo>) => {
     register(values as UserInfo)
       .then((result) => {
-        console.log('reg result:', result);
         if(result?.status){
           snackbar.success(t("auth.register.notifications.success"));
           navigate(`/`);
@@ -118,6 +120,20 @@ const Register = () => {
           onChange={formik.handleChange}
           error={formik.touched.pinNumber && Boolean(formik.errors.pinNumber)}
           helperText={formik.touched.pinNumber && formik.errors.pinNumber}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="totpSecret"
+          label={'Totp Secret'}
+          name="totpSecret"
+          type="text"
+          disabled={isRegistering}
+          value={formik.values.totpSecret}
+          onChange={formik.handleChange}
+          error={formik.touched.totpSecret && Boolean(formik.errors.totpSecret)}
+          helperText={formik.touched.totpSecret && formik.errors.totpSecret}
         />
         <TextField
           margin="normal"

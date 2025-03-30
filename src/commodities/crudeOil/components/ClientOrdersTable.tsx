@@ -4,6 +4,7 @@ import { ClientOrders } from "../types/clientOrders";
 import moment from "moment";
 import { DataGrid, GridColDef, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarDensitySelector, GridToolbarExport, GridToolbarFilterButton } from "@mui/x-data-grid";
 import Box from '@mui/material/Box';
+import { useMemo } from "react";
 
 type ClientOrdersTableProps = {
   ordersData?: ClientOrders[];
@@ -16,7 +17,9 @@ const ClientOrdersTable = ({
 }: ClientOrdersTableProps) => {
 
   const [pageSize, setPageSize] = React.useState<number>(20);
-
+  const memoizedColumns = useMemo(() => columns, [columns]);
+  const memoizedRows = useMemo(() => ordersData, [ordersData]);
+  
   if (ordersData.length === 0) {
     return <Empty title="No Data Found" />;
   }
@@ -31,6 +34,8 @@ const ClientOrdersTable = ({
       </GridToolbarContainer>
     );
   }
+
+  
   return (
     
       <Box sx={{
@@ -51,9 +56,9 @@ const ClientOrdersTable = ({
                   }
                 }}>
         <DataGrid
-          rows={ordersData}
+          rows={memoizedRows}
           disableColumnSelector={true}
-          columns={columns}
+          columns={memoizedColumns}
           isRowSelectable={(row:any)=>row._id}
           components={{
             Toolbar: CustomToolbar,

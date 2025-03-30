@@ -33,7 +33,7 @@ export function useAngelbrokingLogin() {
 
 export const CheckBrokerStatusService = async (): Promise<any> => {
   try {
-    let response = await fetch(`${BASE_URL}${GET_ANGEL_BROKING_STATUS_URL}`);
+    let response = await fetch(`${BASE_URL}${GET_ANGEL_BROKING_STATUS_URL}`,{method: 'GET',headers: { 'Content-Type': 'application/json', "clientId":`${localStorage.getItem('clientId')}` }});
     if (!response.ok) // or check for response.status
         throw new Error(response.statusText);
     return await response.json(); // or .json() or whatever

@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import Empty from "../../core/components/Empty";
-import { LoginUsers } from "../types/loginUsers";
+import { Users } from "../types/Users";
 import moment from "moment";
 import { DataGrid, GridColDef, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarDensitySelector, GridToolbarExport, GridToolbarFilterButton } from "@mui/x-data-grid";
 import Box from '@mui/material/Box';
 
 type LoginUsersProps = {
-  loginUsersData?: LoginUsers[];
+  loginUsersData?: Users[];
   columns: GridColDef[];
 };
 

@@ -42,7 +42,8 @@ const LogsManagement = lazy(()=> import("./logs/pages/LogsListing"));
 //moneyflux-stocks-management
 const BankNiftyTrading = lazy(() => import("./bankNifty/pages/BankNiftyTrading"));
 const CrudeOilTrading = lazy(() => import("./commodities/crudeOil/pages/CrudeOilTrading"));
-const NiftyTrading = lazy(() => import("./nifty/pages/niftyTrading"));
+const NiftyTrading = lazy(() => import("./nfo/pages/niftyTrading"));
+const BasketTrading = lazy(() => import("./nfo/pages/basketTrading"));
 const BankNiftyOrders = lazy(() => import("./bankNifty/pages/BankNiftyOrders"));
 const LoginUsersManagement = lazy(() => import("./users/pages/loginUserManagement"));
 const AppRoutes = () => {
@@ -68,6 +69,7 @@ const AppRoutes = () => {
         />
         <PrivateRoute path="banknifty-trading" element={<BankNiftyTrading />} />
         <PrivateRoute path="nifty-trading" element={<NiftyTrading />} />
+        <PrivateRoute path="basket-trading" element={<BasketTrading />} />
         <PrivateRoute path="crudeoil-trading" element={<CrudeOilTrading />} />
         <PrivateRoute path="login-users" element={<LoginUsersManagement />} />
         <PrivateRoute path="logs-management" element={<LogsManagement/>}/>
