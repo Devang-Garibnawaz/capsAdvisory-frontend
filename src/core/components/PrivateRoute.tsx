@@ -13,11 +13,10 @@ const PrivateRoute = ({
 }: PrivateRouteProps) => {
   const { hasRole, userInfo } = useAuth();
 
-
   if (userInfo && localStorage.getItem('authkey')) {
     if (!hasRole(roles)) {
       return <Navigate to={`/${process.env.PUBLIC_URL}/403`} />;
-    }else if(userInfo.role === 'user'){
+    } else if(userInfo.role === 'user'){
       return <Navigate to={`/${process.env.PUBLIC_URL}/angel-broking-login`} />;
     }
     return <Route {...routeProps} />;

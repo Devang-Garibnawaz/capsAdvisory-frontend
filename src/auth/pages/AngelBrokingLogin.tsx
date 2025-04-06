@@ -34,7 +34,7 @@ const AngelBrokingLogin = () => {
 
   useEffect(() => {
     const authkey = localStorage.getItem('authkey');
-    if(authkey ==='' || authkey === null){
+    if(authkey === '' || authkey === null){
       navigate(`/${process.env.PUBLIC_URL}`, { replace: true });
       return;
     }else{

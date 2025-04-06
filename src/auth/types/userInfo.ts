@@ -3,11 +3,8 @@ export class UserInfo {
   email: string = "";
   fullName: string = "";
   password: string = "";
-  pinNumber: string = "";
-  totpSecret: string = "";
-  clientId: string = "";
   progress: number = 0;
-  role: string = "user";
+  role: string = "admin";
   status: string = "";
   message: string = "";
 }

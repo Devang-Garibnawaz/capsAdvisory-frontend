@@ -18,14 +18,12 @@ import { GridColDef } from "@mui/x-data-grid";
 import {
   autoLoginAngel,
   FetchLoginUsersDataService,
-  FetchRegisteredUsersDataService,
   tradeToggle,
   updateUserStatus,
 } from "../hooks/userServices";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { DatePicker, LoadingButton } from "@material-ui/lab";
 import { ArrowBackIos, ArrowForwardIos } from "@material-ui/icons";
-import RegisteredUsersTable from "../components/RegisteredusersTable";
 
 const LoginUsersManagement = () => {
   const orderDataColumns: GridColDef[] = [
@@ -98,58 +96,15 @@ const LoginUsersManagement = () => {
     },
   ];
 
-  const registeredUsersDataColumns: GridColDef[] = [
-    {
-      field: "isActive",
-      headerName: "Avtive User",
-      width: 250,
-      renderCell: (params) =>
-        params.row.isActive ? (
-          <Button
-            sx={{
-              padding: "1px 6px",
-              borderRadius: "5px",
-              backgroundColor: "#1fa91f",
-              color: "#ffff",
-              borderColor: "ffff",
-            }}
-            variant="outlined"
-            onClick={() => handleUserStatus(params.row)}
-          >
-            Active
-          </Button>
-        ) : (
-          <Button
-            sx={{
-              padding: "1px 6px",
-              borderRadius: "5px",
-              backgroundColor: "#e33838",
-              color: "#ffff",
-              borderColor: "ffff",
-            }}
-            variant="outlined"
-            onClick={() => handleUserStatus(params.row)}
-          >
-            Deactive
-          </Button>
-        ),
-    },
-    { field: "clientId", headerName: "Client Code", width: 250, align: "left" },
-    { field: "fullName", headerName: "Client Name", width: 250, align: "left" }
-  ];
-
   const snackbar = useSnackbar();
   const [loginUsersData, setLoginUsersData] = useState<any>();
-  const [registeredUsersData, setRegisteredUsersData] = useState<any>();  
   const [isDataFetching, setIsDataFetching] = useState(false);
   const [dpDate, setDPDate] = useState<Date>(new Date());
   const [nextDisable, setNextDisable] = useState<boolean>(false);
 
   const fetchRecords = async () => {
     const loginUsersData = await FetchLoginUsersDataService(dpDate!);
-    const registeredUsersData = await FetchRegisteredUsersDataService();
     setLoginUsersData(loginUsersData);
-    setRegisteredUsersData(registeredUsersData);
   };
 
   const autoLoginUsers = async () => {
@@ -338,28 +293,6 @@ const LoginUsersManagement = () => {
                   <LoginUsersTable
                     columns={orderDataColumns}
                     loginUsersData={loginUsersData}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Grid>
-      <Grid container spacing={4}>
-      <Grid item sm={12} sx={{ display: "content", marginTop: "20px" }}>
-          <Grid item sm={12} sx={{ paddingLeft: "20px !important" }}>
-            <Card variant="outlined" sx={{ padding: "20px" }}>
-              <CardHeader
-                title={"Registered Users List"}
-                sx={{ padding: "5px 24px 0 24px" }}
-              ></CardHeader>
-              <CardContent sx={{ padding: "10px !important" }}>
-                {isDataFetching ? (
-                  <Skeleton animation="wave" />
-                ) : (
-                  <RegisteredUsersTable
-                    columns={registeredUsersDataColumns}
-                    registeredUsersData={registeredUsersData}
                   />
                 )}
               </CardContent>

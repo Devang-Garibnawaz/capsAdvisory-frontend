@@ -12,3 +12,11 @@ export const FetchUserInfo = async (email:string) => {
     const userInfo = await (await fetch(`${BASE_URL}${GET_USER_INFO_URL}`,requestOptions)).json();
     return userInfo;
 };
+
+export const getRequiredHeaders = () => {
+    const token = localStorage.getItem("authkey") || null;
+    return {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token?.toString()}`,
+    };
+};

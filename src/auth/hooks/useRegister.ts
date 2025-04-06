@@ -11,7 +11,7 @@ const GET_LOGIN_URL = 'users/register';
 // };
 
 const register = async (userInfo: UserInfo): Promise<UserInfo> => {
-  userInfo.role = 'user'; // default role assign as user
+  userInfo.role = 'admin'; // default role assign as admin
   const requestOptions = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

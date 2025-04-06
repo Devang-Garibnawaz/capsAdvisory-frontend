@@ -19,6 +19,8 @@ import { CheckBrokerStatusService } from "../../auth/hooks/useAngelBrokingLogin"
 import Logo from "../../core/components/Logo";
 import { drawerCollapsedWidth, drawerWidth } from "../../core/config/layout";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
+import PeopleIcon from '@mui/icons-material/People';
+import GroupIcon from '@mui/icons-material/Group';
 
 type AdminDrawerProps = {
   collapsed: boolean;
@@ -64,20 +66,30 @@ const AdminDrawer = ({
         //   path: "/admin/orders",
         // },
         {
+          icon: PeopleIcon,
+          key: "admin.drawer.menu.AccountManager",
+          path: "/admin/account-manager"
+        },
+        {
+          icon: GroupIcon,
+          key: "admin.drawer.menu.GroupManager",
+          path: "/admin/group-manager"
+        },
+        {
           icon: Grading,
           key: "admin.drawer.menu.LoginUsersManagement",
           path: "/admin/login-users"
         },
-        {
-          icon: WaterFallChartIcon,
-          key: "admin.drawer.menu.NiftyTrading",
-          path: "/admin/nifty-trading",
-        },
-        {
-          icon: WaterFallChartIcon,
-          key: "admin.drawer.menu.BasketTrading",
-          path: "/admin/basket-trading",
-        },
+        // {
+        //   icon: WaterFallChartIcon,
+        //   key: "admin.drawer.menu.NiftyTrading",
+        //   path: "/admin/nifty-trading",
+        // },
+        // {
+        //   icon: WaterFallChartIcon,
+        //   key: "admin.drawer.menu.BasketTrading",
+        //   path: "/admin/basket-trading",
+        // },
         // {
         //   icon: WaterFallChartIcon,
         //   key: "admin.drawer.menu.CrudeoilTrading",

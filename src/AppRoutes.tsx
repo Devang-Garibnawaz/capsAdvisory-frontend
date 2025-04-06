@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import PrivateRoute from "./core/components/PrivateRoute";
 import JobsListing from "./Jobs/pages/JobsListing";
+import AccountDetails from './accountManager/pages/accountDetails';
 
 // Admin
 const Admin = lazy(() => import("./admin/pages/Admin"));
@@ -46,6 +47,10 @@ const NiftyTrading = lazy(() => import("./nfo/pages/niftyTrading"));
 const BasketTrading = lazy(() => import("./nfo/pages/basketTrading"));
 const BankNiftyOrders = lazy(() => import("./bankNifty/pages/BankNiftyOrders"));
 const LoginUsersManagement = lazy(() => import("./users/pages/loginUserManagement"));
+const AccountManager = lazy(() => import("./accountManager/pages/accountManager"));
+const GroupManager = lazy(() => import("./accountManager/pages/groupManager"));
+const BrokerDetails = lazy(() => import("./accountManager/pages/accountDetails"));
+
 const AppRoutes = () => {
   return (
     <Routes basename={process.env.PUBLIC_URL}>
@@ -67,6 +72,9 @@ const AppRoutes = () => {
             />
           }
         />
+        <PrivateRoute path="account-manager" element={<AccountManager />} />
+        <PrivateRoute path="group-manager" element={<GroupManager />} />
+        <PrivateRoute path="account/:accountId/*" element={<AccountDetails />} />
         <PrivateRoute path="banknifty-trading" element={<BankNiftyTrading />} />
         <PrivateRoute path="nifty-trading" element={<NiftyTrading />} />
         <PrivateRoute path="basket-trading" element={<BasketTrading />} />
@@ -75,11 +83,11 @@ const AppRoutes = () => {
         <PrivateRoute path="logs-management" element={<LogsManagement/>}/>
         <PrivateRoute path="orders" element={<BankNiftyOrders/>}/>
         <PrivateRoute path="jobs-management" element={<JobsListing/>}/>
-
       </PrivateRoute>
+      <Route path="/" element={<Login />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="forgot-password-submit" element={<ForgotPasswordSubmit />} />
-      <Route path="/" element={<Login />} />
+      
       <Route path="angel-broking-login" element={<AngelBrokingLogin />} />
       <Route path="register" element={<Register />} />
       <Route path="under-construction" element={<UnderConstructions />} />

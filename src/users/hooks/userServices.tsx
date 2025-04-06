@@ -2,7 +2,6 @@ import { getBaseUrl } from "../../http/globalUrl";
 
 const BASE_URL = getBaseUrl();
 const GET_LOGIN_USERS_LIST ='users/getLoginUsers';
-const GET_REGISTERED_USERS_LIST ='users/getRegisteredUsers';
 const POST_TRADE_ON_OFF ='users/tradeToggle';
 const POST_CHANGE_USER_STATUS ='users/updateUserStatus';
 const POST_AUTO_LOGIN_USERS ='users/autoLoginAngel';
@@ -18,18 +17,6 @@ export async function FetchLoginUsersDataService(date:Date){
         console.log('Error fetching data:', error);
         throw new Error('Failed to fetch data');
     }
-}
-
-export async function FetchRegisteredUsersDataService(){
-    
-        try {
-            const response = await fetch(`${BASE_URL}${GET_REGISTERED_USERS_LIST}`);
-            const json = await response.json();
-            return json.users;
-        } catch (error) {
-            console.log('Error fetching data:', error);
-            throw new Error('Failed to fetch data');
-        }
 }
 
 export async function tradeToggle(clientCode:string,status:boolean){

@@ -18,6 +18,8 @@
         "AngelBrokingLogin":"Broker Login",
         "LogsManagement":"Logs List",
         "LoginUsersManagement":"Login Users",
+        "AccountManager": "Account Manager",
+        "GroupManager": "Group Manager",
         "JobsManagement":"Jobs List",
         "moneyfluxStocksManagement":"MF Stocks List",
         "pnl":"Profit And Loss"

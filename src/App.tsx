@@ -9,12 +9,17 @@ import QueryWrapper from "./core/components/QueryWrapper";
 import SettingsProvider from "./core/contexts/SettingsProvider";
 import SnackbarProvider from "./core/contexts/SnackbarProvider";
 import usePageTracking from "./core/hooks/usePageTracking";
+import { setupFetchInterceptor, setupAxiosInterceptor, axiosInstance } from "./http/interceptors";
 
 if (process.env.NODE_ENV === "production") {
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,
   });
 }
+
+// Initialize API interceptors
+setupFetchInterceptor();
+setupAxiosInterceptor();
 
 // Create a client
 const queryClient = new QueryClient({

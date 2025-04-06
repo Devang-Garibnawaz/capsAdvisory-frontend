@@ -24,9 +24,6 @@ const Register = () => {
     initialValues: {
       email: "",
       fullName: "",
-      clientId: "",
-      pinNumber: "",
-      totpSecret:"",
       password:""
     },
     validationSchema: Yup.object({
@@ -36,14 +33,6 @@ const Register = () => {
       fullName: Yup.string()
         .max(20, t("common.validations.max", { size: 20 }))
         .required(t("common.validations.required")),
-      clientId: Yup.string()
-      .max(20, t("common.validations.max", { size: 20 }))
-      .required(t("common.validations.required")),
-      pinNumber: Yup.string()
-      .max(20, t("common.validations.max", { size: 20 }))
-      .required(t("common.validations.required")),
-      totpSecret: Yup.string()
-      .required(t("common.validations.required")),
       password: Yup.string()
         .min(8, t("common.validations.min", { size: 8 }))
         .required(t("common.validations.required")),
@@ -91,49 +80,6 @@ const Register = () => {
           onChange={formik.handleChange}
           error={formik.touched.fullName && Boolean(formik.errors.fullName)}
           helperText={formik.touched.fullName && formik.errors.fullName}
-        />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="clientId"
-          label={'Client Id'}
-          name="clientId"
-          autoComplete="given-name"
-          disabled={isRegistering}
-          value={formik.values.clientId}
-          onChange={formik.handleChange}
-          error={formik.touched.clientId && Boolean(formik.errors.clientId)}
-          helperText={formik.touched.clientId && formik.errors.clientId}
-        />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="pinNumber"
-          label={'PIN'}
-          name="pinNumber"
-          type="password"
-          autoComplete="pin-number"
-          disabled={isRegistering}
-          value={formik.values.pinNumber}
-          onChange={formik.handleChange}
-          error={formik.touched.pinNumber && Boolean(formik.errors.pinNumber)}
-          helperText={formik.touched.pinNumber && formik.errors.pinNumber}
-        />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="totpSecret"
-          label={'Totp Secret'}
-          name="totpSecret"
-          type="text"
-          disabled={isRegistering}
-          value={formik.values.totpSecret}
-          onChange={formik.handleChange}
-          error={formik.touched.totpSecret && Boolean(formik.errors.totpSecret)}
-          helperText={formik.touched.totpSecret && formik.errors.totpSecret}
         />
         <TextField
           margin="normal"

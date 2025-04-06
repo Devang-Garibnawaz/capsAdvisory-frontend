@@ -196,9 +196,13 @@ const NiftyTrading = () => {
   const fetchExpiryDates = async () => {
     const expiryList = await getNiftyExpiryList();
     if (expiryList) {
-      const sortedDates = [...expiryList].sort(
-        (a, b) => sortExpiryDate(a).getTime() - sortExpiryDate(b).getTime()
-      );
+      const sortedDates = [...expiryList].sort((a, b) => {
+        const format = (dateStr: string): number => {
+            const date = new Date(dateStr.replace(/-/g, ' '));
+            return date.getTime(); // Convert Date to number (timestamp)
+        };
+        return format(a) - format(b);
+      });
       setExpiryDateList(sortedDates);
     }
   };

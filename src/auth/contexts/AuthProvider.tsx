@@ -24,18 +24,23 @@ type AuthProviderProps = {
 };
 
 const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [authKey, setAuthKey] = useLocalStorage<string>("authkey", "");
+  const [authKey, setAuthKey] = useLocalStorage<string>("authkey", localStorage.getItem('authkey')||"");
   const navigate = useNavigate();
   
   const { isLoggingIn, login } = useLogin();
   const {isAngelbrokingLoggingIn,angelBrokingLogin} = useAngelbrokingLogin();
   const { data: userInfo } = useUserInfo(authKey);
-
+  
+  if (!userInfo && authKey) {
+    localStorage.setItem('authkey','');
+  }
+  
   const hasRole = (roles?: string[]) => {
     if (!roles || roles.length === 0) {
       return true;
     }
     if (!userInfo) {
+      localStorage.setItem('authkey','');
       return false;
     }
     return roles.includes(userInfo.role);
