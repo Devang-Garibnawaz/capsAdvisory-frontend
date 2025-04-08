@@ -24,6 +24,7 @@ import AdminToolbar from "../../admin/components/AdminToolbar";
 import { getDematAccounts } from '../hooks/accountManagementService';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useSnackbar } from '../../core/contexts/SnackbarProvider';
+import { ExitAllPostions } from '../../nfo/hooks/niftyServices';
 
 const AccountDetails = () => {
   const { accountId } = useParams();
@@ -145,6 +146,21 @@ const AccountDetails = () => {
     document.body.removeChild(link);
   };
 
+  const handleSquareOffAll = async () => {
+    try {
+      const result = await ExitAllPostions();
+      if (result.status) {
+        snackbar.success(result.message);
+        fetchAccountDetails(); // Refresh the positions data
+      } else {
+        snackbar.error(result.message);
+      }
+    } catch (error) {
+      console.error('Error squaring off positions:', error);
+      snackbar.error('Failed to square off positions');
+    }
+  };
+
   const renderSortLabel = (label: string, property: string) => (
     <TableSortLabel
       active={orderBy === property}
@@ -190,6 +206,7 @@ const AccountDetails = () => {
               color="error"
               startIcon={<CloseIcon />}
               disabled={allPositionsClosed || positions.length === 0}
+              onClick={handleSquareOffAll}
               sx={{ 
                 textTransform: 'none',
                 py: 0.5,

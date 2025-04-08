@@ -1,4 +1,5 @@
 import { getBaseUrl } from "../../http/globalUrl";
+import { getRequiredHeaders } from "../../services/userService";
 
 const BASE_URL = getBaseUrl();
 const GET_CLIENT_ORDERS_DATA = 'orders/getClientOrders';
@@ -7,7 +8,7 @@ const GET_NIFTY_OPTION_CHAIN_DATA = 'orders/getNFOOptionChainData';
 const POST_NFO_ORDER_PLACE = 'orders/placeNFOOrder';
 const POST_NFO_NIFTY_WEBSOCKET = 'orders/niftyWebsocketConnect';
 const POST_CANCEL_ORDERS = 'orders/cancelOrders'
-const POST_EXIT_POSTIONS = 'orders/exitAllPositions'
+const POST_EXIT_POSTIONS = 'orders/squareOffPositions'
 
 export async function getNiftyExpiryList(symbol: string = 'NIFTY') {
 
@@ -108,7 +109,7 @@ export async function ExitAllPostions(){
     try {
         const requestOptions = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: getRequiredHeaders()
         };
         const response = await fetch(`${BASE_URL}${POST_EXIT_POSTIONS}`, requestOptions);
         return await response.json();
