@@ -37,8 +37,15 @@ interface BrokerCardProps {
     inGroup?: number;
     pnl?: number;
     margin?: number;
-    pos?: number;
-    orders?: number;
+    position?: any;
+    orders?: {
+      orders?: any;
+      total?: number;
+      cancelled?: number;
+      complete?: number;
+      pending?: number;
+      rejected?: number;
+    };
     pending?: number;
     complete?: number;
     reject?: number;
@@ -151,22 +158,22 @@ const BrokerCard: React.FC<BrokerCardProps> = ({
           <StatBox label="P&L" value={stats.pnl || 0} />
         </Grid>
         <Grid item xs={3}>
-          <StatBox label="POS" value={stats.pos || 0} />
+          <StatBox label="POS" value={stats?.position?.length || 0} />
         </Grid>
         <Grid item xs={3}>
-          <StatBox label="Orders" value={stats.orders || 0} />
+          <StatBox label="Orders" value={stats?.orders?.total || 0} />
         </Grid>
         <Grid item xs={3}>
-          <StatBox label="Pending" value={stats.pending || 0} />
+          <StatBox label="Pending" value={stats?.orders?.pending || 0} />
         </Grid>
         <Grid item xs={3}>
-          <StatBox label="Complete" value={stats.complete || 0} />
+          <StatBox label="Complete" value={stats?.orders?.complete || 0} />
         </Grid>
         <Grid item xs={3}>
-          <StatBox label="Reject" value={stats.reject || 0} />
+          <StatBox label="Reject" value={stats?.orders?.rejected || 0} />
         </Grid>
         <Grid item xs={3}>
-          <StatBox label="Cancel" value={stats.cancel || 0} />
+          <StatBox label="Cancel" value={stats?.orders?.cancelled || 0} />
         </Grid>
       </Grid>
     </Card>

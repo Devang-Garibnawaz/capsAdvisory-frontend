@@ -12,6 +12,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Paper,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -21,138 +22,518 @@ import CloseIcon from '@mui/icons-material/Close';
 import AdminAppBar from "../../admin/components/AdminAppBar";
 import AdminToolbar from "../../admin/components/AdminToolbar";
 import { getDematAccounts } from '../hooks/accountManagementService';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { useSnackbar } from '../../core/contexts/SnackbarProvider';
 
 const AccountDetails = () => {
   const { accountId } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('positions');
+  type TabType = 'positions' | 'orders' | 'trades';
+  const [activeTab, setActiveTab] = useState<TabType>('positions');
+  const [accountDetails, setAccountDetails] = useState<any>(null);
   const [accountName, setAccountName] = useState('');
-  const [margin] = useState(0.00);
-  const [pnl] = useState(-232.5);
-
+  const [margin, setMargin] = useState<number>(0.00);
+  const [pnl, setPnl] = useState<number>(0.00);
+  type SortDirection = 'asc' | 'desc';
+  const [orderBy, setOrderBy] = useState<string>('');
+  const [order, setOrder] = useState<SortDirection>('asc');
+  const [searchQuery, setSearchQuery] = useState('');
+  const snackbar = useSnackbar();
+  
   useEffect(() => {
-    const fetchAccountDetails = async () => {
-      try {
-        const response = await getDematAccounts();
-        if (response.status) {
-          const account = response.dematAccounts.find((acc: any) => acc._id === accountId);
-          if (account) {
-            setAccountName(`${account.fullName}-angelone-${account.clientId}`);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching account details:', error);
-      }
-    };
-
     fetchAccountDetails();
   }, [accountId]);
+
+  const fetchAccountDetails = async () => {
+    try {
+      const response = await getDematAccounts();
+      if (response.status) {
+        const account = response.dematAccounts.find((acc: any) => acc._id === accountId);
+        if (account) {
+          setAccountDetails(account);
+          setMargin(Number(Number(account?.stats?.margin || 0).toFixed(2)));
+          
+          // Calculate total PNL from positions
+          const positions = Object.values(account?.stats?.position || {});
+          const totalPnl = positions.reduce((sum: number, position: any) => {
+            return sum + Number(position.pnl || 0);
+          }, 0);
+          
+          setPnl(Number(totalPnl.toFixed(2)));
+          setAccountName(`${account.fullName}-angelone-${account.clientId}`);
+          snackbar.success('Account details fetched successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching account details:', error);
+      snackbar.error('Error fetching account details');
+    }
+  };
 
   const handleBack = () => {
     navigate(-1);
   };
 
-  const renderTableHeader = () => (
+  const handleSort = (property: string) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const sortData = (data: Record<string, any>[], property: string): Record<string, any>[] => {
+    if (!data) return [];
+    return [...data].sort((a, b) => {
+      const aValue = a[property];
+      const bValue = b[property];
+      
+      if (order === 'desc') {
+        return bValue > aValue ? 1 : bValue < aValue ? -1 : 0;
+      }
+      return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+    });
+  };
+
+  const filterData = (data: Record<string, any>[], query: string): Record<string, any>[] => {
+    if (!query) return data;
+    const lowercaseQuery = query.toLowerCase();
+    return data.filter(item => 
+      Object.values(item).some(value => 
+        String(value).toLowerCase().includes(lowercaseQuery)
+      )
+    );
+  };
+
+  const getTableData = () => {
+    if (activeTab === 'positions' && accountDetails?.stats?.position) {
+      const data = Object.values(accountDetails.stats.position || {}) as Record<string, any>[];
+      return sortData(filterData(data, searchQuery), orderBy);
+    }
+    if (activeTab === 'orders' && accountDetails?.stats?.orders?.orders) {
+      const data = Object.values(accountDetails.stats.orders.orders || {}) as Record<string, any>[];
+      return sortData(filterData(data, searchQuery), orderBy);
+    }
+    if (activeTab === 'trades' && accountDetails?.stats?.trades) {
+      const data = Object.values(accountDetails.stats.trades || {}) as Record<string, any>[];
+      return sortData(filterData(data, searchQuery), orderBy);
+    }
+    return [];
+  };
+
+  const handleExportToExcel = () => {
+    const data = getTableData();
+    if (data.length === 0) return;
+
+    // Convert data to CSV format
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header]?.toString() || '';
+        return value.includes(',') ? `"${value}"` : value;
+      }).join(','))
+    ].join('\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${activeTab}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const renderSortLabel = (label: string, property: string) => (
+    <TableSortLabel
+      active={orderBy === property}
+      direction={orderBy === property ? order : 'asc'}
+      onClick={() => handleSort(property)}
+      sx={{
+        color: 'white !important',
+        '& .MuiTableSortLabel-icon': {
+          color: 'white !important',
+        },
+      }}
+    >
+      {label}
+    </TableSortLabel>
+  );
+
+  const renderPositionsContent = () => {
+    const positions = getTableData();
+    const allPositionsClosed = positions.length > 0 && positions.every(position => position.buyqty === position.sellqty);
+
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<FileDownloadIcon />}
+              onClick={handleExportToExcel}
+              sx={{ 
+                backgroundColor: '#0EA5E9', 
+                '&:hover': { backgroundColor: '#0284C7' },
+                textTransform: 'none',
+                py: 0.5,
+                px: 2
+              }}
+            >
+              Export to CSV
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="error"
+              startIcon={<CloseIcon />}
+              disabled={allPositionsClosed || positions.length === 0}
+              sx={{ 
+                textTransform: 'none',
+                py: 0.5,
+                px: 2
+              }}
+            >
+              Square Off All
+            </Button>
+          </Box>
+          <TextField
+            placeholder="Search"
+            variant="outlined"
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              width: 300,
+              backgroundColor: '#1E1E1E',
+              input: { color: 'white' },
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
+              },
+            }}
+          />
+        </Box>
+
+        <TableContainer component={Paper} sx={{ backgroundColor: 'transparent' }}>
+          <Table sx={{ '& .MuiTableCell-root': { borderColor: 'rgba(255, 255, 255, 0.1)' } }}>
+            {renderPositionsTableHeader()}
+            <TableBody>
+              {positions.map((position: any, index: number) => (
+                <TableRow key={position.tradingsymbol}>
+                  <TableCell sx={{ color: 'white' }}>{index + 1}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{position.tradingsymbol}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{position.producttype || 'CARRYFORWARD'}</TableCell>
+                  <TableCell>
+                    <Box sx={{ 
+                      color: position.buyqty === position.sellqty ? '#fc424a' :
+                             position.buyqty > 0 ? '#00d25b' : '#fc424a',
+                      backgroundColor: position.buyqty === position.sellqty ? 'rgba(252, 66, 74, 0.2)' :
+                                     position.buyqty > 0 ? 'rgba(0, 210, 91, 0.2)' : 'rgba(252, 66, 74, 0.2)',
+                      display: 'inline-block',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 1,
+                      textShadow: position.buyqty === position.sellqty ? '0 0 10px rgba(252, 66, 74, 0.5)' :
+                                 position.buyqty > 0 ? '0 0 10px rgba(0, 210, 91, 0.5)' : '0 0 10px rgba(252, 66, 74, 0.5)',
+                      fontWeight: 500
+                    }}>
+                      {position.buyqty === position.sellqty ? 'CLOSED' :
+                       position.buyqty > 0 ? 'BUY' : 'SELL'}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ color: 'white' }}>{position.buyqty}</TableCell>
+                  <TableCell sx={{ color: Number(position.pnl) >= 0 ? '#22C55E' : '#EF4444' }}>
+                    {Number(position.pnl).toFixed(2)} {Number(position.pnl) < 0 ? '↓' : '↑'}
+                  </TableCell>
+                  <TableCell sx={{ color: 'white' }}>{Number(position.ltp).toFixed(2)}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{Number(position.avgnetprice).toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      size="small"
+                      disabled={position.buyqty === position.sellqty}
+                    >
+                      Square Off
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {positions.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} align="center" sx={{ color: 'white' }}>
+                    {searchQuery ? 'No matching positions found' : 'No positions found'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    );
+  };
+
+  const renderOrdersTableHeader = () => (
     <TableHead>
       <TableRow>
-        <TableCell sx={{ color: 'grey.500' }}>Id</TableCell>
-        <TableCell sx={{ color: 'grey.500' }}>Symbol ↓</TableCell>
-        <TableCell sx={{ color: 'grey.500' }}>Product ↓</TableCell>
-        <TableCell sx={{ color: 'grey.500' }}>Action ↓</TableCell>
-        <TableCell sx={{ color: 'grey.500' }}>Quantity ↓</TableCell>
-        <TableCell sx={{ color: 'grey.500' }}>Pnl ↓</TableCell>
-        <TableCell sx={{ color: 'grey.500' }}>Ltp ↓</TableCell>
-        <TableCell sx={{ color: 'grey.500' }}>Avgprice ↓</TableCell>
-        <TableCell sx={{ color: 'grey.500' }}>Square Off</TableCell>
+        <TableCell sx={{ color: 'white' }}>Id</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Symbol', 'tradingsymbol')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Product', 'producttype')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('B/S', 'transactiontype')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Quantity', 'quantity')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Order Type', 'ordertype')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Price', 'price')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Order Id', 'orderid')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Status', 'status')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Create Time', 'exchtime')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>Actions</TableCell>
       </TableRow>
     </TableHead>
   );
 
-  const renderPositionsContent = () => (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<FileDownloadIcon />}
-            sx={{ 
-              backgroundColor: '#0EA5E9', 
-              '&:hover': { backgroundColor: '#0284C7' },
-              textTransform: 'none',
-              py: 0.5,
-              px: 2
-            }}
-          >
-            Export to Excel
-          </Button>
-          <Button
-            variant="contained"
-            size="small"
-            color="error"
-            startIcon={<CloseIcon />}
-            sx={{ 
-              textTransform: 'none',
-              py: 0.5,
-              px: 2
-            }}
-          >
-            Square Off All
-          </Button>
-        </Box>
-        <TextField
-          placeholder="Search"
-          variant="outlined"
-          size="small"
-          sx={{
-            width: 300,
-            backgroundColor: '#1E1E1E',
-            input: { color: 'white' },
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
-            },
-          }}
-        />
-      </Box>
+  const renderOrdersContent = () => {
+    const orders = getTableData();
 
-      <TableContainer component={Paper} sx={{ backgroundColor: 'transparent' }}>
-        <Table sx={{ '& .MuiTableCell-root': { borderColor: 'rgba(255, 255, 255, 0.1)' } }}>
-          {renderTableHeader()}
-          <TableBody>
-            <TableRow>
-              <TableCell sx={{ color: 'white' }}>1</TableCell>
-              <TableCell sx={{ color: 'white' }}>NIFTY09APR2523000PE</TableCell>
-              <TableCell sx={{ color: 'white' }}>CARRYFORWARD</TableCell>
-              <TableCell>
-                <Box sx={{ 
-                  color: 'white',
-                  backgroundColor: '#059669',
-                  display: 'inline-block',
-                  px: 2,
-                  py: 0.5,
-                  borderRadius: 1
-                }}>
-                  Buy
-                </Box>
-              </TableCell>
-              <TableCell sx={{ color: 'white' }}>75</TableCell>
-              <TableCell sx={{ color: '#EF4444' }}>-232.5 ↓</TableCell>
-              <TableCell sx={{ color: 'white' }}>186.05</TableCell>
-              <TableCell sx={{ color: 'white' }}>189.15</TableCell>
-              <TableCell>
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="small"
-                >
-                  Square Off
-                </Button>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<FileDownloadIcon />}
+              onClick={handleExportToExcel}
+              sx={{ 
+                backgroundColor: '#0EA5E9', 
+                '&:hover': { backgroundColor: '#0284C7' },
+                textTransform: 'none',
+                py: 0.5,
+                px: 2
+              }}
+            >
+              Export to CSV
+            </Button>
+          </Box>
+          <TextField
+            placeholder="Search"
+            variant="outlined"
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              width: 300,
+              backgroundColor: '#1E1E1E',
+              input: { color: 'white' },
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
+              },
+            }}
+          />
+        </Box>
+
+        <TableContainer component={Paper} sx={{ backgroundColor: 'transparent' }}>
+          <Table sx={{ '& .MuiTableCell-root': { borderColor: 'rgba(255, 255, 255, 0.1)' } }}>
+            {renderOrdersTableHeader()}
+            <TableBody>
+              {orders.map((order: any, index: number) => (
+                <TableRow key={order.orderid}>
+                  <TableCell sx={{ color: 'white' }}>{index + 1}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{order.tradingsymbol}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{order.producttype || 'CARRYFORWARD'}</TableCell>
+                  <TableCell>
+                    <Box sx={{ 
+                      color: order.transactiontype === 'BUY' ? '#00d25b' : '#fc424a',
+                      backgroundColor: order.transactiontype === 'BUY' ? 'rgba(0, 210, 91, 0.2)' : 'rgba(252, 66, 74, 0.2)',
+                      display: 'inline-block',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 1,
+                      textShadow: order.transactiontype === 'BUY' ? '0 0 10px rgba(0, 210, 91, 0.5)' : '0 0 10px rgba(252, 66, 74, 0.5)',
+                      fontWeight: 500
+                    }}>
+                      {order.transactiontype}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                      <Typography sx={{ color: '#00d25b' }}>{order.filledshares}</Typography>
+                      <Typography sx={{ color: 'white' }}>/{order.quantity}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ color: 'white' }}>{order.ordertype}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{Number(order.price).toFixed(2)}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{order.orderid}</TableCell>
+                  <TableCell>
+                    <Box sx={{ 
+                      color: order.status === 'complete' ? '#00d25b' : 
+                             order.status === 'rejected' || order.status === 'cancelled' ? '#fc424a' : 
+                             order.status === 'pending' ? '#F59E0B' : '#6B7280',
+                      backgroundColor: order.status === 'complete' ? 'rgba(0, 210, 91, 0.2)' : 
+                                     order.status === 'rejected' || order.status === 'cancelled' ? 'rgba(252, 66, 74, 0.2)' : 
+                                     order.status === 'pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+                      display: 'inline-block',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 1,
+                      textShadow: order.status === 'complete' ? '0 0 10px rgba(0, 210, 91, 0.5)' :
+                                 order.status === 'rejected' || order.status === 'cancelled' ? '0 0 10px rgba(252, 66, 74, 0.5)' :
+                                 order.status === 'pending' ? '0 0 10px rgba(245, 158, 11, 0.5)' : 'none',
+                      fontWeight: 500
+                    }}>
+                      {order.status === 'complete' ? 'COMPLETE' : 
+                       order.status === 'rejected' ? 'REJECTED' : 
+                       order.status === 'pending' ? 'PENDING' : 
+                       order.status === 'cancelled' ? 'CANCELLED' : order.status.toUpperCase()}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ color: 'white' }}>{order.updatetime}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      size="small"
+                      disabled={['complete', 'cancelled', 'rejected'].includes(order.status.toLowerCase())}
+                      sx={{ 
+                        color: 'white',
+                        backgroundColor: '#4B5563',
+                        '&:hover': { backgroundColor: '#374151' },
+                        '&.Mui-disabled': {
+                          backgroundColor: '#1F2937',
+                          color: '#6B7280'
+                        }
+                      }}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {orders.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} align="center" sx={{ color: 'white' }}>
+                    {searchQuery ? 'No matching orders found' : 'No orders found'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    );
+  };
+
+  const renderTradesTableHeader = () => (
+    <TableHead>
+      <TableRow>
+        <TableCell sx={{ color: 'white' }}>Id</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Symbol', 'tradingsymbol')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Product', 'producttype')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Quantity', 'fillsize')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('B/S', 'transactiontype')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Price', 'fillprice')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Order Id', 'orderid')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Create Time', 'filltime')}</TableCell>
+      </TableRow>
+    </TableHead>
+  );
+
+  const renderTradesContent = () => {
+    const trades = getTableData();
+
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<FileDownloadIcon />}
+              onClick={handleExportToExcel}
+              sx={{ 
+                backgroundColor: '#0EA5E9', 
+                '&:hover': { backgroundColor: '#0284C7' },
+                textTransform: 'none',
+                py: 0.5,
+                px: 2
+              }}
+            >
+              Export to CSV
+            </Button>
+          </Box>
+          <TextField
+            placeholder="Search"
+            variant="outlined"
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              width: 300,
+              backgroundColor: '#1E1E1E',
+              input: { color: 'white' },
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
+              },
+            }}
+          />
+        </Box>
+
+        <TableContainer component={Paper} sx={{ backgroundColor: 'transparent' }}>
+          <Table sx={{ '& .MuiTableCell-root': { borderColor: 'rgba(255, 255, 255, 0.1)' } }}>
+            {renderTradesTableHeader()}
+            <TableBody>
+              {trades.map((trade: any, index: number) => (
+                <TableRow key={trade.fillid}>
+                  <TableCell sx={{ color: 'white' }}>{index + 1}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{trade.tradingsymbol}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{trade.producttype}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{trade.fillsize}</TableCell>
+                  <TableCell>
+                    <Box sx={{ 
+                      display: 'inline-block',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 1,
+                      fontWeight: 500,
+                      color: trade.transactiontype === 'BUY' ? '#00d25b' : '#fc424a',
+                      backgroundColor: trade.transactiontype === 'BUY' ? 'rgba(0, 210, 91, 0.2)' : 'rgba(252, 66, 74, 0.2)',
+                      textShadow: trade.transactiontype === 'BUY' ? '0 0 10px rgba(0, 210, 91, 0.5)' : '0 0 10px rgba(252, 66, 74, 0.5)'
+                    }}>
+                      {trade.transactiontype}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ color: 'white' }}>{Number(trade.fillprice).toFixed(2)}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{trade.orderid}</TableCell>
+                  <TableCell sx={{ color: 'white' }}>{trade.filltime}</TableCell>
+                </TableRow>
+              ))}
+              {trades.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ color: 'white' }}>
+                    {searchQuery ? 'No matching trades found' : 'No trades found'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    );
+  };
+
+  const renderPositionsTableHeader = () => (
+    <TableHead>
+      <TableRow>
+        <TableCell sx={{ color: 'white' }}>Id</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Symbol', 'tradingsymbol')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Product', 'producttype')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>Action</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Quantity', 'buyqty')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Pnl', 'pnl')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Ltp', 'ltp')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>{renderSortLabel('Avgprice', 'avgnetprice')}</TableCell>
+        <TableCell sx={{ color: 'white' }}>Square Off</TableCell>
+      </TableRow>
+    </TableHead>
   );
 
   return (
@@ -209,7 +590,9 @@ const AccountDetails = () => {
             >
               Place Order
             </Button>
-            <IconButton sx={{ 
+            <IconButton 
+              onClick={() => fetchAccountDetails()}
+            sx={{ 
               backgroundColor: '#8B5CF6',
               '&:hover': { backgroundColor: '#7C3AED' }
             }}>
@@ -283,12 +666,8 @@ const AccountDetails = () => {
           p: 2
         }}>
           {activeTab === 'positions' && renderPositionsContent()}
-          {activeTab === 'orders' && (
-            <Typography color="text.secondary">Orders content will go here</Typography>
-          )}
-          {activeTab === 'trades' && (
-            <Typography color="text.secondary">Trades content will go here</Typography>
-          )}
+          {activeTab === 'orders' && renderOrdersContent()}
+          {activeTab === 'trades' && renderTradesContent()}
         </Box>
       </Box>
     </React.Fragment>

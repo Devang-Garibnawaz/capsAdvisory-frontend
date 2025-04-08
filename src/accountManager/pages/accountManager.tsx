@@ -28,8 +28,15 @@ interface DematAccount {
     inGroup: number;
     pnl: number;
     margin: number;
-    pos: number;
-    orders: number;
+    position?: any;
+    orders?: {
+      orders?: any;
+      total?: number;
+      cancelled?: number;
+      complete?: number;
+      pending?: number;
+      rejected?: number;
+    };
     pending: number;
     complete: number;
     reject: number;
@@ -46,8 +53,15 @@ interface BrokerAccount {
     inGroup: number;
     pnl: number;
     margin: number;
-    pos: number;
-    orders: number;
+    position?: any;
+    orders?: {
+      orders?: any;
+      total?: number;
+      cancelled?: number;
+      complete?: number;
+      pending?: number;
+      rejected?: number;
+    };
     pending: number;
     complete: number;
     reject: number;
@@ -80,13 +94,10 @@ const AccountManager = () => {
           stats: {
             inGroup: account.stats.inGroup || 0,
             pnl: account.stats.pnl || 0,
-            margin: account.stats.margin || 0
-            // pos: account.stats.pos || 0,
-            // orders: account.stats.orders || 0,
-            // pending: account.stats.pending || 0,
-            // complete: account.stats.complete || 0,
-            // reject: account.stats.reject || 0,
-            // cancel: account.stats.cancel || 0,
+            margin: account.stats.margin || 0,
+            position: account.stats.position || 0,
+            orders: account.stats.orders || 0,
+            
           },
         }));
         
