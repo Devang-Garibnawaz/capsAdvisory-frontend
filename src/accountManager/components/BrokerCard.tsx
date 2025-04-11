@@ -7,7 +7,7 @@ import {
   IconButton,
   Stack,
   Grid,
-  CircularProgress,
+  CircularProgress
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';

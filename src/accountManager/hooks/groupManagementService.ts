@@ -11,7 +11,7 @@ const TOGGLE_TRADING = 'groups/toggleTrading';
 const ADD_CHILD = 'groups/addChild';
 const REMOVE_CHILD = 'groups/removeChild';
 const GET_GROUP_CHILDREN = 'groups/getChildren';
-
+const SQUARE_OFF_ALL_BY_GROUP = 'groups/squareOffAll';
 export interface Group {
   _id: string;
   name: string;
@@ -246,3 +246,18 @@ export async function getGroupChildren(groupId: string) {
     throw new Error('Failed to fetch group children');
   }
 } 
+
+export async function squareOffAllByGroup(groupId: string) {
+  try {
+    const response = await fetch(`${BASE_URL}${SQUARE_OFF_ALL_BY_GROUP}/${groupId}`, {
+      method: 'POST',
+      headers: getRequiredHeaders(),
+    });
+
+    const json = await response.json();
+    return json;
+  } catch (error) {
+    console.log('Error square off all by group:', error);
+    throw new Error('Failed to square off all by group');
+  }
+}

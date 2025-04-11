@@ -8,6 +8,11 @@ const GET_DEMAT_ACCOUNTS = 'users/getDematAccounts';
 const UPDATE_DEMAT_ACCOUNT_TRADE_TOGGLE = 'users/updateDematAccountTradeToggle';
 const DELETE_DEMAT_ACCOUNT = 'users/deleteDematAccount';
 const AUTO_LOGIN_USERS = 'users/autoLoginUsers';
+const CANCEL_ALL_ORDERS_Group = 'groups/cancelAllOrders';
+const CANCEL_ALL_ORDERS_User = 'users/cancelAllOrders';
+const CANCEL_ORDER_BY_ORDER_ID = 'users/cancelOrder';
+const SQUARE_OFF_BY_ID = 'users/squareOff';
+
 export async function getAvailableBrokersList() {
     try {
         
@@ -111,5 +116,64 @@ export const autoLoginUsers = async () => {
   } catch (error) {
     console.error('Error in autoLoginUsers:', error);
     throw error;
+  }
+};
+
+export const cancelAllOrders = async (groupId ='', dematAccountId = ''): Promise<any> => {
+  try {
+    const url = groupId 
+      ? `${BASE_URL}${CANCEL_ALL_ORDERS_Group}/${groupId}`
+      : `${BASE_URL}${CANCEL_ALL_ORDERS_User}/${dematAccountId}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getRequiredHeaders(),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error cancelling orders:', error);
+    return {
+      status: false,
+      message: 'Failed to cancel orders',
+    };
+  }
+};
+
+export const cancelOrderByOrderId = async (orderId: string) => {
+  try {
+    const response = await fetch(`${BASE_URL}${CANCEL_ORDER_BY_ORDER_ID}/${orderId}`, {
+      method: 'POST',
+      headers: getRequiredHeaders(),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    return {
+      status: false,
+      message: 'Failed to cancel order',
+    };
+  }
+};
+
+export const squareOffById = async (positionId: string, position: any) => {
+  try {
+    const response = await fetch(`${BASE_URL}${SQUARE_OFF_BY_ID}/${positionId}`, {
+      method: 'POST',
+      headers: getRequiredHeaders(),
+      body: JSON.stringify(position)
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error squaring off position:', error);
+    return {
+      status: false,
+      message: 'Failed to square off position',
+    };
   }
 };

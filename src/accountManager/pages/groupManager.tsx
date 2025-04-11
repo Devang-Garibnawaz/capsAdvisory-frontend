@@ -21,19 +21,15 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  TextField,
-  InputAdornment,
+  DialogActions
 } from "@mui/material";
 import CreateGroup from "../components/CreateGroup";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
-import { getGroups, createGroup, updateGroup, deleteGroup, Group, toggleMaster, toggleTrading, addChildToGroup, getGroupChildren, GroupChild, removeChildFromGroup } from "../hooks/groupManagementService";
-import { getDematAccounts, updateDematAccountTradeToggle } from "../hooks/accountManagementService";
+import { getGroups, createGroup, deleteGroup, Group, toggleMaster, toggleTrading, addChildToGroup, getGroupChildren, GroupChild, removeChildFromGroup, squareOffAllByGroup } from "../hooks/groupManagementService";
+import { getDematAccounts, updateDematAccountTradeToggle, cancelAllOrders } from "../hooks/accountManagementService";
 import { BrokerAccount, GroupStats } from '../types';
 import AddChildAccount from '../components/AddChildAccount';
 import BrokerCard from '../components/BrokerCard';
@@ -164,6 +160,35 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
     navigate(`/admin/account/${accountId}`);
   };
 
+  const handleCancelAllOrders = async (groupId='', dematAccountId='') => {
+    try {
+      const response = await cancelAllOrders(groupId,dematAccountId);
+      
+      if (response.status) {
+        snackbar.success(response.message);
+        fetchGroupChildren();
+      } else {
+        snackbar.error(response.message || 'Failed to cancel orders');
+      }
+    } catch (error: any) {
+      snackbar.error('Error cancelling orders: ' + error.message);
+    }
+  };
+
+  const handleSquareOffAll = async (groupId: string) => {
+    try {
+      const response = await squareOffAllByGroup(groupId);
+      if (response.status) {
+        snackbar.success(response.message);
+        fetchGroupChildren();
+      } else {
+        snackbar.error(response.message || 'Failed to square off all');
+      }
+    } catch (error: any) {
+      snackbar.error('Error square off all: ' + error.message);
+    }
+  };
+
   return (
     <Box>
       {/* Header */}
@@ -195,9 +220,13 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
               setRefreshFunction(fetchGroupChildren);
               onAddChild();
             }}
+            size="medium"
             sx={{ 
               backgroundColor: '#0EA5E9',
-              '&:hover': { backgroundColor: '#0284C7' }
+              '&:hover': { backgroundColor: '#0284C7' },
+              py: 0.7,
+              px: 2,
+              textTransform: 'none'
             }}
           >
             + Add Child
@@ -210,6 +239,12 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
             color="error"
             onClick={onToggleMaster}
             disabled={isTogglingMaster}
+            size="medium"
+            sx={{ 
+              py: 0.7,
+              px: 2,
+              textTransform: 'none'
+            }}
             startIcon={isTogglingMaster ? <CircularProgress size={20} /> : undefined}
           >
             Disconnect Master
@@ -220,6 +255,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
           <Switch
             checked={placeRejected}
             onChange={(e) => setPlaceRejected(e.target.checked)}
+            size="medium"
           />
           <Typography sx={{ color: 'grey.500' }}>
             Trading
@@ -228,6 +264,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
             checked={group.isTrading}
             onChange={onToggleTrading}
             disabled={isTogglingTrading}
+            size="medium"
           />
           <Typography variant="h6" sx={{ color: 'white', ml: 2 }}>
             0/2
@@ -235,11 +272,24 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
           <Button
             variant="contained"
             color="success"
+            size="medium"
+            sx={{ 
+              py: 0.7,
+              px: 2,
+              textTransform: 'none'
+            }}
           >
             Place Order
           </Button>
-          <IconButton sx={{ color: 'white' }}>
-            <SyncIcon />
+          <IconButton 
+            onClick={fetchGroupChildren}
+            size="medium"
+            sx={{ 
+              backgroundColor: '#8B5CF6',
+              '&:hover': { backgroundColor: '#7C3AED' }
+            }}
+          >
+            <SyncIcon sx={{ color: 'white', fontSize: '1.3rem' }} />
           </IconButton>
         </Box>
       </Box>
@@ -252,82 +302,44 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
         mb: 2,
         gap: 2
       }}>
-        <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
-          <TextField
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{
-              flex: 1,
-              borderRadius: '17px',
-              backgroundColor: '#1A1C1E',
-              '& .MuiOutlinedInput-root': {
-                color: 'white',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: 'grey.500' }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <FormControl sx={{ minWidth: 200 }}>
-            <Select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              displayEmpty
-              sx={{
-                backgroundColor: '#1A1C1E',
-                color: 'white',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(255, 255, 255, 0.23)',
-                },
-              }}
-            >
-              <MenuItem value="">Sort By</MenuItem>
-              <MenuItem value="name">Name</MenuItem>
-              <MenuItem value="date">Date</MenuItem>
-            </Select>
-          </FormControl>
-          <IconButton sx={{ 
-            backgroundColor: '#0EA5E9',
-            '&:hover': { backgroundColor: '#0284C7' }
-          }}>
-            <ArrowBackIcon sx={{ color: 'white' }} />
-          </IconButton>
-          <IconButton sx={{ 
-            backgroundColor: '#8B5CF6',
-            '&:hover': { backgroundColor: '#7C3AED' }
-          }}>
-            <SyncIcon sx={{ color: 'white' }} />
-          </IconButton>
-        </Box>
+        
 
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             variant="contained"
-            sx={{ backgroundColor: '#8B5CF6', '&:hover': { backgroundColor: '#7C3AED' } }}
-          >
-            Positions
-          </Button>
-          <Button
-            variant="contained"
             color="error"
+            size="medium"
+            onClick={() => handleSquareOffAll(group._id)}
+            sx={{ 
+              py: 0.7,
+              px: 2,
+              textTransform: 'none'
+            }}
           >
             Square Off All
           </Button>
           <Button
             variant="contained"
             color="success"
+            size="medium"
+            sx={{ 
+              py: 0.7,
+              px: 2,
+              textTransform: 'none'
+            }}
           >
             Convert To Market All
           </Button>
           <Button
             variant="contained"
             color="error"
+            size="medium"
+            onClick={() => handleCancelAllOrders(group._id, '')}
+            sx={{ 
+              py: 0.7,
+              px: 2,
+              textTransform: 'none'
+            }}
           >
             Cancel All
           </Button>
