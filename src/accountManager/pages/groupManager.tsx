@@ -6,6 +6,7 @@ import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import SyncIcon from '@mui/icons-material/Sync';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { 
   Box, 
   Button, 
@@ -261,7 +262,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
             Trading
           </Typography>
           <Switch
-            checked={group.isTrading}
+            checked={group.isTradeEnabled}
             onChange={onToggleTrading}
             disabled={isTogglingTrading}
             size="medium"
@@ -411,6 +412,7 @@ const GroupManager = () => {
   const [isTogglingMaster, setIsTogglingMaster] = useState<string | null>(null);
   const [isTogglingTrading, setIsTogglingTrading] = useState<string | null>(null);
   const [confirmMasterDialog, setConfirmMasterDialog] = useState(false);
+  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
   const [selectedMasterData, setSelectedMasterData] = useState<{
     groupId: string;
     accountId: string;
@@ -420,6 +422,7 @@ const GroupManager = () => {
   const [isGroupDetailsView, setIsGroupDetailsView] = useState(false);
   const [isAddChildOpen, setIsAddChildOpen] = useState(false);
   const [selectedGroupForRefresh, setSelectedGroupForRefresh] = useState<() => Promise<void>>();
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
   
   const snackbar = useSnackbar();
 
@@ -501,9 +504,16 @@ const GroupManager = () => {
   };
 
   const handleDeleteGroup = async (groupId: string) => {
+    setGroupToDelete(groupId);
+    setConfirmDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!groupToDelete) return;
+    
     try {
       setIsSubmitting(true);
-      const response = await deleteGroup(groupId);
+      const response = await deleteGroup(groupToDelete);
       
       if (response.status) {
         snackbar.success('Group deleted successfully');
@@ -515,6 +525,8 @@ const GroupManager = () => {
       snackbar.error('Error deleting group: ' + error.message);
     } finally {
       setIsSubmitting(false);
+      setConfirmDeleteDialog(false);
+      setGroupToDelete(null);
     }
   };
 
@@ -611,11 +623,11 @@ const GroupManager = () => {
 
       const response = await toggleTrading({ 
         groupId, 
-        isTrading: !group.isTrading 
+        isTrading: !group.isTradeEnabled 
       });
       
       if (response.status) {
-        snackbar.success(`Trading ${!group.isTrading ? 'enabled' : 'disabled'} successfully`);
+        snackbar.success(`Trading ${!group.isTradeEnabled ? 'enabled' : 'disabled'} successfully`);
         fetchGroups(); // Refresh the groups list
       } else {
         snackbar.error(response.message || 'Failed to update trading status');
@@ -705,16 +717,28 @@ const GroupManager = () => {
                           <Typography variant="h6" sx={{ color: 'white', flex: 1 }}>
                             {group.name}
                           </Typography>
-                          <IconButton
-                            size="small"
-                            sx={{ 
-                              backgroundColor: '#3B82F6',
-                              '&:hover': { backgroundColor: '#2563EB' }
-                            }}
-                            onClick={() => handleViewGroup(group._id)}
-                          >
-                            <VisibilityIcon fontSize="small" sx={{ color: 'white' }} />
-                          </IconButton>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <IconButton
+                              size="small"
+                              sx={{ 
+                                backgroundColor: '#3B82F6',
+                                '&:hover': { backgroundColor: '#2563EB' }
+                              }}
+                              onClick={() => handleViewGroup(group._id)}
+                            >
+                              <VisibilityIcon fontSize="small" sx={{ color: 'white' }} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              sx={{ 
+                                backgroundColor: '#EF4444',
+                                '&:hover': { backgroundColor: '#DC2626' }
+                              }}
+                              onClick={() => handleDeleteGroup(group._id)}
+                            >
+                              <DeleteIcon fontSize="small" sx={{ color: 'white' }} />
+                            </IconButton>
+                          </Box>
                         </Box>
 
                         {/* Master Account Selection */}
@@ -792,7 +816,7 @@ const GroupManager = () => {
                             Trading
                           </Typography>
                           <Switch
-                            checked={group.isTrading}
+                            checked={group.isTradeEnabled}
                             onChange={() => handleToggleTrading(group._id)}
                             disabled={isTogglingTrading === group._id}
                           />
@@ -951,6 +975,48 @@ const GroupManager = () => {
             color="primary"
           >
             Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={confirmDeleteDialog}
+        onClose={() => {
+          setConfirmDeleteDialog(false);
+          setGroupToDelete(null);
+        }}
+        PaperProps={{
+          style: {
+            backgroundColor: '#1E1E1E',
+            color: '#FFFFFF',
+          },
+        }}
+      >
+        <DialogTitle>Delete Group</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this group?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ padding: 2 }}>
+          <Button
+            onClick={() => {
+              setConfirmDeleteDialog(false);
+              setGroupToDelete(null);
+            }}
+            variant="contained"
+            color="error"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            color="primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? <CircularProgress size={24} /> : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

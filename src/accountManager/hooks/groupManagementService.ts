@@ -17,7 +17,7 @@ export interface Group {
   name: string;
   members: string[];
   masterAccountId?: string;
-  isTrading: boolean;
+  isTradeEnabled: boolean;
   stats?: {
     orders: number;
     qty: number;

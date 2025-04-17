@@ -32,17 +32,16 @@ type SettingsProviderProps = {
 const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const [collapsed, setCollapsed] = useLocalStorage("sidebarcollapsed", false);
   const [direction, setDirection] = useLocalStorage("direction", "ltr");
-  const [mode, setMode] = useLocalStorage("mode", "light");
+  const [mode, setMode] = useState(localStorage.getItem("mode") || "light");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     document.body.dir = direction;
   }, [direction]);
 
-  const theme = useMemo(
-    () => createTheme(direction as "ltr" | "rtl", mode as "dark" | "light"),
-    [direction, mode]
-  );
+  const theme = useMemo(() => {
+    return createTheme(direction as "ltr" | "rtl", mode as "dark" | "light");
+  }, [direction, mode]);
 
   const changeCollapsed = (collapsed: boolean) => {
     if (typeof collapsed === "boolean") {

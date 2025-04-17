@@ -20,7 +20,7 @@ import Logo from "../../core/components/Logo";
 import { drawerCollapsedWidth, drawerWidth } from "../../core/config/layout";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
 import PeopleIcon from '@mui/icons-material/People';
-import GroupIcon from '@mui/icons-material/Group';
+import GroupsIcon from '@mui/icons-material/Groups';
 
 type AdminDrawerProps = {
   collapsed: boolean;
@@ -71,7 +71,7 @@ const AdminDrawer = ({
           path: "/admin/account-manager"
         },
         {
-          icon: GroupIcon,
+          icon: GroupsIcon,
           key: "admin.drawer.menu.GroupManager",
           path: "/admin/group-manager"
         },

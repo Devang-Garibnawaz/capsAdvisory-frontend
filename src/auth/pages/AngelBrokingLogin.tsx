@@ -59,8 +59,8 @@ const AngelBrokingLogin = () => {
 
   const formik = useFormik({
     initialValues: {
-      clientCode: localStorage.getItem('clientId'),
-      password: localStorage.getItem('pinNumber'),
+      clientCode: '',
+      password: '',
       tOtp:"",
     },
     validationSchema: Yup.object({

@@ -278,7 +278,7 @@ const AccountDetails = () => {
     const positions = getTableData();
     const allPositionsClosed =
       positions.length > 0 &&
-      positions.every((position) => position.buyqty === position.sellqty);
+      positions.every((position) => position.producttype === "CARRYFORWARD" ? (position.cfbuyqty === position.cfsellqty) : (position.buyqty === position.sellqty));
 
     return (
       <Box>
@@ -358,39 +358,65 @@ const AccountDetails = () => {
                     <Box
                       sx={{
                         color:
-                          position.buyqty === position.sellqty
+                          position.producttype === "CARRYFORWARD" ?
+                          position.cfbuyqty === position.cfsellqty
                             ? "#fc424a"
-                            : position.buyqty > 0
+                            : position.cfbuyqty > 0
                             ? "#00d25b"
-                            : "#fc424a",
+                            : "#fc424a"
+                          : position.buyqty === position.sellqty
+                          ? "#fc424a"
+                          : position.buyqty > 0
+                          ? "#00d25b"
+                          : "#fc424a",
                         backgroundColor:
-                          position.buyqty === position.sellqty
+                          position.producttype === "CARRYFORWARD" ?
+                          position.cfbuyqty === position.cfsellqty
                             ? "rgba(252, 66, 74, 0.2)"
-                            : position.buyqty > 0
+                            : position.cfbuyqty > 0
                             ? "rgba(0, 210, 91, 0.2)"
-                            : "rgba(252, 66, 74, 0.2)",
+                            : "rgba(252, 66, 74, 0.2)"
+                          : position.buyqty === position.sellqty
+                          ? "rgba(252, 66, 74, 0.2)"
+                          : position.buyqty > 0
+                          ? "rgba(0, 210, 91, 0.2)"
+                          : "rgba(252, 66, 74, 0.2)",
                         display: "inline-block",
                         px: 2,
                         py: 0.5,
                         borderRadius: 1,
                         textShadow:
-                          position.buyqty === position.sellqty
+                          position.producttype === "CARRYFORWARD" ?
+                          position.cfbuyqty === position.cfsellqty
                             ? "0 0 10px rgba(252, 66, 74, 0.5)"
-                            : position.buyqty > 0
+                            : position.cfbuyqty > 0
                             ? "0 0 10px rgba(0, 210, 91, 0.5)"
-                            : "0 0 10px rgba(252, 66, 74, 0.5)",
+                            : "0 0 10px rgba(252, 66, 74, 0.5)"
+                          : position.buyqty === position.sellqty
+                          ? "0 0 10px rgba(252, 66, 74, 0.5)"
+                          : position.buyqty > 0
+                          ? "0 0 10px rgba(0, 210, 91, 0.5)"
+                          : "0 0 10px rgba(252, 66, 74, 0.5)",
                         fontWeight: 500,
                       }}
                     >
-                      {position.buyqty === position.sellqty
+                      {position.producttype === "CARRYFORWARD" ?
+                      position.cfbuyqty === position.cfsellqty
                         ? "CLOSED"
-                        : position.buyqty > 0
+                        : position.cfbuyqty > 0
                         ? "BUY"
-                        : "SELL"}
+                        : "SELL"
+                      : position.buyqty === position.sellqty
+                      ? "CLOSED"
+                      : position.buyqty > 0
+                      ? "BUY"
+                      : "SELL"}
                     </Box>
                   </TableCell>
                   <TableCell sx={{ color: "white" }}>
-                    {position.buyqty}
+                    {position.producttype === "CARRYFORWARD" ?
+                    position.cfbuyqty
+                    : position.buyqty}
                   </TableCell>
                   <TableCell
                     sx={{
@@ -411,7 +437,7 @@ const AccountDetails = () => {
                       variant="contained"
                       color="error"
                       size="small"
-                      disabled={position.buyqty === position.sellqty}
+                      disabled={position.producttype === "CARRYFORWARD" ? (position.cfbuyqty === position.cfsellqty) : (position.buyqty === position. sellqty)}
                     >
                       Square Off
                     </Button>
