@@ -7,6 +7,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import SyncIcon from '@mui/icons-material/Sync';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { 
   Box, 
   Button, 
@@ -97,6 +99,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
   const snackbar = useSnackbar();
   const navigate = useNavigate();
   const ws = useRef<WebSocket | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const fetchGroupChildren = async () => {
     try {
@@ -573,15 +576,79 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
           </Box>
         ) : groupChildren.length > 0 ? (
           <>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 1,
+              cursor: 'pointer',
+              backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#FFFFFF',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              border: theme => theme.palette.mode === 'dark' 
+                ? '1px solid rgba(255, 255, 255, 0.1)'
+                : '1px solid rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: theme => theme.palette.mode === 'dark' ? '#262626' : '#F8FAFC',
+                borderColor: theme => theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.2)'
+                  : 'rgba(0, 0, 0, 0.2)',
+              }
+            }} onClick={() => setIsExpanded(!isExpanded)}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {isExpanded ? (
+                  <ExpandLessIcon sx={{ 
+                    fontSize: '1.5rem',
+                    color: theme => theme.palette.mode === 'dark' ? '#60A5FA' : '#2563EB'
+                  }} />
+                ) : (
+                  <ExpandMoreIcon sx={{ 
+                    fontSize: '1.5rem',
+                    color: theme => theme.palette.mode === 'dark' ? '#60A5FA' : '#2563EB'
+                  }} />
+                )}
+                <Typography variant="subtitle1" sx={{ 
+                  fontWeight: 500,
+                  color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                  fontSize: '0.95rem'
+                }}>
+                  {isExpanded ? 'Collapse' : 'Expand'} Broker Cards
+                </Typography>
+              </Box>
+              <Typography variant="body2" sx={{ 
+                color: theme => theme.palette.mode === 'dark' ? '#94A3B8' : '#64748B',
+                backgroundColor: theme => theme.palette.mode === 'dark' ? '#27272A' : '#F1F5F9',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: '0.8rem'
+              }}>
+                {groupChildren.length} {groupChildren.length === 1 ? 'Card' : 'Cards'}
+              </Typography>
+            </Box>
+
             <Box 
               sx={{ 
-                display: 'grid',
+                display: isExpanded ? 'grid' : 'none',
                 gridTemplateColumns: {
                   xs: '1fr',
                   sm: 'repeat(2, 1fr)',
                   md: 'repeat(3, 1fr)',
                 },
                 gap: 3,
+                mt: 2,
+                animation: isExpanded ? 'fadeIn 0.3s ease-in-out' : 'none',
+                '@keyframes fadeIn': {
+                  '0%': {
+                    opacity: 0,
+                    transform: 'translateY(-10px)'
+                  },
+                  '100%': {
+                    opacity: 1,
+                    transform: 'translateY(0)'
+                  }
+                }
               }}
             >
               {groupChildren.map((child) => (
@@ -598,93 +665,93 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                   isToggling={togglingAccountId === child.accountId}
                 />
               ))}
-      </Box>
+            </Box>
 
-      {/* Search and Actions */}
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'flex-start',
-        mb: 2,
-        gap: 2
-      }}>
-        <TextField
-          placeholder="Search..."
-          value={tableState.searchQuery}
-          onChange={handleSearch}
-          size="small"
-          sx={{ 
-            backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#F8FAFC',
-            borderRadius: 1,
-            minWidth: '240px',
-            '& .MuiOutlinedInput-root': {
-              color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
-              '& fieldset': {
-                borderColor: theme => theme.palette.mode === 'dark'
-                  ? 'rgba(255, 255, 255, 0.23)'
-                  : 'rgba(0, 0, 0, 0.23)',
-              },
-              '&:hover fieldset': {
-                borderColor: theme => theme.palette.mode === 'dark'
-                  ? 'rgba(255, 255, 255, 0.5)'
-                  : 'rgba(0, 0, 0, 0.5)',
-              },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ 
-                  color: theme => theme.palette.mode === 'dark' ? 'white' : '#64748B'
-                }} />
-              </InputAdornment>
-            ),
-          }}
-        />
+            {/* Search and Actions */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'flex-start',
+              mb: 2,
+              gap: 2
+            }}>
+              <TextField
+                placeholder="Search..."
+                value={tableState.searchQuery}
+                onChange={handleSearch}
+                size="small"
+                sx={{ 
+                  backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#F8FAFC',
+                  borderRadius: 1,
+                  minWidth: '240px',
+                  '& .MuiOutlinedInput-root': {
+                    color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                    '& fieldset': {
+                      borderColor: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.23)'
+                        : 'rgba(0, 0, 0, 0.23)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.5)'
+                        : 'rgba(0, 0, 0, 0.5)',
+                    },
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ 
+                        color: theme => theme.palette.mode === 'dark' ? 'white' : '#64748B'
+                      }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
 
-        {tableState.activeTab === 'positions' && (
-          <Button
-            variant="contained"
-            color="error"
-            size="medium"
-            onClick={() => handleSquareOffAll(group._id)}
-            disabled={!tableData.positions.some(pos => Number(pos.netqty) !== 0)}
-            sx={{ 
-              py: 0.7,
-              px: 2,
-              textTransform: 'none',
-              minWidth: '100px',
-              backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
-              '&:hover': {
-                backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
-              },
-            }}
-          >
-            Exit All
-          </Button>
-        )}
-        {tableState.activeTab === 'orders' && (
-          <Button
-            variant="contained"
-            color="error"
-            size="medium"
-            onClick={() => handleCancelAllOrders(group._id)}
-            disabled={!tableData.orders.some(order => !["complete", "cancelled", "rejected"].includes(order.status.toLowerCase()))}
-            sx={{ 
-              py: 0.7,
-              px: 2,
-              textTransform: 'none',
-              minWidth: '100px',
-              backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
-              '&:hover': {
-                backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
-              },
-            }}
-          >
-            Cancel All
-          </Button>
-        )}
-      </Box>
+              {tableState.activeTab === 'positions' && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="medium"
+                  onClick={() => handleSquareOffAll(group._id)}
+                  disabled={!tableData.positions.some(pos => Number(pos.netqty) !== 0)}
+                  sx={{ 
+                    py: 0.7,
+                    px: 2,
+                    textTransform: 'none',
+                    minWidth: '100px',
+                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
+                    '&:hover': {
+                      backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
+                    },
+                  }}
+                >
+                  Exit All
+                </Button>
+              )}
+              {tableState.activeTab === 'orders' && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="medium"
+                  onClick={() => handleCancelAllOrders(group._id)}
+                  disabled={!tableData.orders.some(order => !["complete", "cancelled", "rejected"].includes(order.status.toLowerCase()))}
+                  sx={{ 
+                    py: 0.7,
+                    px: 2,
+                    textTransform: 'none',
+                    minWidth: '100px',
+                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
+                    '&:hover': {
+                      backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
+                    },
+                  }}
+                >
+                  Cancel All
+                </Button>
+              )}
+            </Box>
 
 
             {/* Tabs */}
