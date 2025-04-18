@@ -7,7 +7,8 @@ import {
   IconButton,
   Stack,
   Grid,
-  CircularProgress
+  CircularProgress,
+  useTheme
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -18,16 +19,24 @@ interface StatBoxProps {
   value: number;
 }
 
-const StatBox: React.FC<StatBoxProps> = ({ label, value }) => (
-  <Box sx={{ textAlign: 'center' }}>
-    <Typography variant="body2" sx={{ color: '#6B7280' }}>
-      {label}
-    </Typography>
-    <Typography variant="h6" sx={{ color: 'white', mt: 1 }}>
-      {value}
-    </Typography>
-  </Box>
-);
+const StatBox: React.FC<StatBoxProps> = ({ label, value }) => {
+  const theme = useTheme();
+  return (
+    <Box sx={{ textAlign: 'center' }}>
+      <Typography variant="body2" sx={{ 
+        color: theme.palette.mode === 'dark' ? '#6B7280' : '#64748B'
+      }}>
+        {label}
+      </Typography>
+      <Typography variant="h6" sx={{ 
+        color: theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+        mt: 1 
+      }}>
+        {value}
+      </Typography>
+    </Box>
+  );
+};
 
 interface BrokerCardProps {
   name: string;
@@ -69,12 +78,17 @@ const BrokerCard: React.FC<BrokerCardProps> = ({
   onView,
   isToggling = false,
 }) => {
+  const theme = useTheme();
+  
   return (
     <Card
       sx={{
-        backgroundColor: '#1A1C1E',
+        backgroundColor: theme.palette.mode === 'dark' ? '#1A1C1E' : '#FFFFFF',
         borderRadius: 1,
         p: 2,
+        boxShadow: theme.palette.mode === 'dark' 
+          ? '0 4px 6px -1px rgba(0, 0, 0, 0.5)' 
+          : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -88,17 +102,28 @@ const BrokerCard: React.FC<BrokerCardProps> = ({
               mr: 2,
             }}
           />
-          <Typography variant="subtitle1" sx={{ color: '#9CA3AF', flex: 1 }}>
+          <Typography variant="subtitle1" sx={{ 
+            color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#64748B',
+            flex: 1 
+          }}>
             {name}
           </Typography>
-          <Typography variant="subtitle1" sx={{ color: 'white', ml: 1 }}>
+          <Typography variant="subtitle1" sx={{ 
+            color: theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+            ml: 1 
+          }}>
             Margin {stats.margin}
           </Typography>
         </Box>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Typography sx={{ color: '#6B7280', mr: 1 }}>Trading</Typography>
+        <Typography sx={{ 
+          color: theme.palette.mode === 'dark' ? '#6B7280' : '#64748B',
+          mr: 1 
+        }}>
+          Trading
+        </Typography>
         {isToggling ? (
           <CircularProgress size={24} sx={{ color: isTrading ? '#22C55E' : '#DC2626' }} />
         ) : (
@@ -106,12 +131,12 @@ const BrokerCard: React.FC<BrokerCardProps> = ({
             checked={isTrading}
             onChange={onToggleTrading}
             sx={{
-              '& .MuiSwitch-track': {
-                backgroundColor: '#374151',
-              },
               '& .MuiSwitch-thumb': {
                 backgroundColor: isTrading ? '#22C55E' : '#DC2626',
               },
+              '& .MuiSwitch-track': {
+                backgroundColor: isTrading ? '#22C55E !important' : '#DC2626 !important',
+              }
             }}
           />
         )}

@@ -25,10 +25,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import AdminAppBar from "../../admin/components/AdminAppBar";
 import AdminToolbar from "../../admin/components/AdminToolbar";
 import {
-  cancelAllOrders,
+  cancelAllOrdersByGroup,
+  cancelAllOrdersByUser,
   cancelOrderByOrderId,
   getDematAccounts,
-  squareOffById,
+  squareOffByUser,
 } from "../hooks/accountManagementService";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
@@ -230,9 +231,9 @@ const AccountDetails = () => {
     }
   };
 
-  const handleSquareOffById = async (positionId: string, position: any) => {
+  const handleSquareOffById = async (position: any) => {
     try {
-      const result = await squareOffById(positionId, position);
+      const result = await squareOffByUser(position);
       if (result.status) {
         snackbar.success(result.message);
         fetchAccountDetails(); // Refresh the positions data
@@ -245,7 +246,7 @@ const AccountDetails = () => {
   };
   const handleCancelAllOrders = async () => {
     try {
-      const result = await cancelAllOrders("", accountId);
+      const result = await cancelAllOrdersByUser(accountId);
       if (result.status) {
         snackbar.success(result.message);
         fetchAccountDetails(); // Refresh the orders data
@@ -259,26 +260,80 @@ const AccountDetails = () => {
   };
 
   const renderSortLabel = (label: string, property: string) => (
+    <TableCell
+      sx={{
+        color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+        padding: '12px 8px',
+        backgroundColor: theme => theme.palette.mode === 'dark' 
+          ? 'rgba(26, 28, 30, 0.95)'
+          : 'rgba(248, 250, 252, 0.95)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1,
+        borderBottom: theme => theme.palette.mode === 'dark'
+          ? '1px solid rgba(255, 255, 255, 0.1)'
+          : '1px solid rgba(0, 0, 0, 0.1)',
+        fontSize: '0.875rem',
+        fontWeight: 700,
+        cursor: 'pointer'
+      }}
+      onClick={() => handleSort(property)}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        {label}
     <TableSortLabel
       active={orderBy === property}
-      direction={orderBy === property ? order : "asc"}
-      onClick={() => handleSort(property)}
+          direction={orderBy === property ? order : 'asc'}
       sx={{
-        color: "white !important",
-        "& .MuiTableSortLabel-icon": {
-          color: "white !important",
-        },
-      }}
-    >
-      {label}
-    </TableSortLabel>
+            '& .MuiTableSortLabel-icon': {
+              color: theme => theme.palette.mode === 'dark' ? 'white !important' : '#1E293B !important',
+            },
+            '&.Mui-active': {
+              color: theme => theme.palette.mode === 'dark' ? 'white !important' : '#1E293B !important',
+            },
+            color: theme => theme.palette.mode === 'dark' ? 'white !important' : '#1E293B !important',
+          }}
+        />
+      </Box>
+    </TableCell>
+  );
+
+  const renderPositionsTableHeader = () => (
+    <TableHead>
+      <TableRow>
+        {[
+          { id: 'id', label: 'Id' },
+          { id: 'tradingsymbol', label: 'Symbol' },
+          { id: 'producttype', label: 'Product' },
+          { id: 'action', label: 'Action' },
+          { id: 'buyqty', label: 'Quantity' },
+          { id: 'pnl', label: 'Pnl' },
+          { id: 'ltp', label: 'Ltp' },
+          { id: 'avgnetprice', label: 'Avgprice' },
+          { id: 'squareoff', label: 'Square Off' }
+        ].map(column => (
+          <TableCell
+            key={column.id}
+            sx={{
+              color: theme => theme.palette.mode === 'dark' ? '#FFFFFF' : '#1E293B',
+              backgroundColor: theme => theme.palette.mode === 'dark' 
+                ? 'rgba(26, 28, 30, 0.95)'
+                : 'rgba(248, 250, 252, 0.95)',
+              fontWeight: 600,
+              padding: '16px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {column.id === 'id' ? column.label : renderSortLabel(column.label, column.id)}
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
   );
 
   const renderPositionsContent = () => {
     const positions = getTableData();
-    const allPositionsClosed =
-      positions.length > 0 &&
-      positions.every((position) => position.producttype === "CARRYFORWARD" ? (position.cfbuyqty === position.cfsellqty) : (position.buyqty === position.sellqty));
+    const allPositionsClosed = !positions.some(pos => Number(pos.netqty) !== 0);
 
     return (
       <Box>
@@ -323,80 +378,170 @@ const AccountDetails = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{
               width: 300,
-              backgroundColor: "#1E1E1E",
-              input: { color: "white" },
+              backgroundColor: "transparent",
               "& .MuiOutlinedInput-root": {
-                "& fieldset": { borderColor: "rgba(255, 255, 255, 0.23)" },
+                backgroundColor: theme => theme.palette.mode === 'dark' 
+                  ? "rgba(26, 28, 30, 0.7)"
+                  : "rgba(248, 250, 252, 0.95)",
+                color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                "& fieldset": {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.1)",
+                },
+                "&:hover fieldset": {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.2)"
+                    : "rgba(0, 0, 0, 0.2)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#3b82f6",
+                }
               },
+              "& .MuiInputBase-input": {
+                "&::placeholder": {
+                  color: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.5)"
+                    : "rgba(0, 0, 0, 0.5)",
+                  opacity: 1
+                }
+              }
             }}
           />
         </Box>
 
         <TableContainer
           component={Paper}
-          sx={{ backgroundColor: "transparent" }}
-        >
-          <Table
             sx={{
-              "& .MuiTableCell-root": {
-                borderColor: "rgba(255, 255, 255, 0.1)",
-              },
-            }}
-          >
+            backgroundColor: theme => theme.palette.mode === 'dark' 
+              ? 'rgba(26, 28, 30, 0.7)'
+              : 'rgba(255, 255, 255, 0.95)',
+            maxHeight: 'calc(100vh - 300px)',
+            position: 'relative',
+            overflow: 'auto',
+            borderRadius: '12px',
+            boxShadow: theme => theme.palette.mode === 'dark'
+              ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+              : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            border: theme => theme.palette.mode === 'dark'
+              ? '1px solid rgba(255, 255, 255, 0.1)'
+              : '1px solid rgba(0, 0, 0, 0.1)',
+            '& .MuiTable-root': {
+              borderCollapse: 'separate',
+              borderSpacing: '0',
+            }
+          }}
+        >
+          <Table stickyHeader size="small">
             {renderPositionsTableHeader()}
             <TableBody>
               {positions.map((position: any, index: number) => (
-                <TableRow key={position.tradingsymbol}>
-                  <TableCell sx={{ color: "white" }}>{index + 1}</TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                <TableRow
+                  key={position.tradingsymbol}
+                  hover
+                  sx={{
+                    '&:nth-of-type(odd)': {
+                      backgroundColor: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.03)'
+                        : 'rgba(0, 0, 0, 0.02)'
+                    },
+                    '&:last-child td': {
+                      borderBottom: 0
+                    }
+                  }}
+                >
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
+                    {index + 1}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {position.tradingsymbol}
                   </TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {position.producttype || "CARRYFORWARD"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     <Box
                       sx={{
                         color:
-                          position.producttype === "CARRYFORWARD" ?
-                          position.cfbuyqty === position.cfsellqty
+                          position.producttype === "CARRYFORWARD" 
+                            ? (position.cfbuyqty === position.cfsellqty
                             ? "#fc424a"
                             : position.cfbuyqty > 0
                             ? "#00d25b"
-                            : "#fc424a"
-                          : position.buyqty === position.sellqty
+                                : "#fc424a")
+                            : (position.buyqty === position.sellqty
                           ? "#fc424a"
                           : position.buyqty > 0
                           ? "#00d25b"
-                          : "#fc424a",
+                                : "#fc424a"),
                         backgroundColor:
-                          position.producttype === "CARRYFORWARD" ?
-                          position.cfbuyqty === position.cfsellqty
+                          position.producttype === "CARRYFORWARD" 
+                            ? (position.cfbuyqty === position.cfsellqty
                             ? "rgba(252, 66, 74, 0.2)"
                             : position.cfbuyqty > 0
                             ? "rgba(0, 210, 91, 0.2)"
-                            : "rgba(252, 66, 74, 0.2)"
-                          : position.buyqty === position.sellqty
+                                : "rgba(252, 66, 74, 0.2)")
+                            : (position.buyqty === position.sellqty
                           ? "rgba(252, 66, 74, 0.2)"
                           : position.buyqty > 0
                           ? "rgba(0, 210, 91, 0.2)"
-                          : "rgba(252, 66, 74, 0.2)",
+                                : "rgba(252, 66, 74, 0.2)"),
                         display: "inline-block",
                         px: 2,
                         py: 0.5,
                         borderRadius: 1,
                         textShadow:
-                          position.producttype === "CARRYFORWARD" ?
-                          position.cfbuyqty === position.cfsellqty
+                          position.producttype === "CARRYFORWARD" 
+                            ? (position.cfbuyqty === position.cfsellqty
                             ? "0 0 10px rgba(252, 66, 74, 0.5)"
                             : position.cfbuyqty > 0
                             ? "0 0 10px rgba(0, 210, 91, 0.5)"
-                            : "0 0 10px rgba(252, 66, 74, 0.5)"
-                          : position.buyqty === position.sellqty
+                                : "0 0 10px rgba(252, 66, 74, 0.5)")
+                            : (position.buyqty === position.sellqty
                           ? "0 0 10px rgba(252, 66, 74, 0.5)"
                           : position.buyqty > 0
                           ? "0 0 10px rgba(0, 210, 91, 0.5)"
-                          : "0 0 10px rgba(252, 66, 74, 0.5)",
+                                : "0 0 10px rgba(252, 66, 74, 0.5)"),
                         fontWeight: 500,
                       }}
                     >
@@ -413,31 +558,95 @@ const AccountDetails = () => {
                       : "SELL"}
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {position.producttype === "CARRYFORWARD" ?
                     position.cfbuyqty
                     : position.buyqty}
                   </TableCell>
                   <TableCell
                     sx={{
-                      color: Number(position.pnl) >= 0 ? "#22C55E" : "#EF4444",
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
                     }}
                   >
                     {Number(position.pnl).toFixed(2)}{" "}
                     {Number(position.pnl) < 0 ? "↓" : "↑"}
                   </TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {Number(position.ltp).toFixed(2)}
                   </TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {Number(position.avgnetprice).toFixed(2)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     <Button
                       variant="contained"
                       color="error"
                       size="small"
-                      disabled={position.producttype === "CARRYFORWARD" ? (position.cfbuyqty === position.cfsellqty) : (position.buyqty === position. sellqty)}
+                      disabled={Number(position.netqty) === 0}
+                      onClick={() => handleSquareOffById(position)}
+                      sx={{
+                        textTransform: 'none',
+                        minWidth: '100px',
+                        backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
+                        color: 'white',
+                        '&:hover': {
+                          backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
+                        },
+                        '&.Mui-disabled': {
+                          backgroundColor: theme => theme.palette.mode === 'dark' 
+                            ? 'rgba(255, 255, 255, 0.12)' 
+                            : 'rgba(0, 0, 0, 0.12)',
+                          color: theme => theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.3)'
+                            : 'rgba(0, 0, 0, 0.3)',
+                        }
+                      }}
                     >
                       Square Off
                     </Button>
@@ -446,7 +655,16 @@ const AccountDetails = () => {
               ))}
               {positions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ color: "white" }}>
+                  <TableCell
+                    colSpan={9}
+                    align="center"
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.7)'
+                        : 'rgba(0, 0, 0, 0.7)',
+                      padding: '24px 8px'
+                    }}
+                  >
                     {searchQuery
                       ? "No matching positions found"
                       : "No positions found"}
@@ -463,35 +681,37 @@ const AccountDetails = () => {
   const renderOrdersTableHeader = () => (
     <TableHead>
       <TableRow>
-        <TableCell sx={{ color: "white" }}>Id</TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Symbol", "tradingsymbol")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Product", "producttype")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("B/S", "transactiontype")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Quantity", "quantity")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Order Type", "ordertype")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Price", "price")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Order Id", "orderid")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Status", "status")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Create Time", "exchtime")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>Actions</TableCell>
+        {[
+          { id: 'tradingsymbol', label: 'Symbol', width: '8%' },
+          { id: 'producttype', label: 'Product', width: '11%' },
+          { id: 'transactiontype', label: 'B/S', width: '9%' },
+          { id: 'quantity', label: 'Quantity', width: '11%' },
+          { id: 'ordertype', label: 'Order Type', width: '11%' },
+          { id: 'price', label: 'Price', width: '9%' },
+          { id: 'orderid', label: 'Order Id', width: '15%' },
+          { id: 'status', label: 'Status', width: '9%' },
+          { id: 'exchtime', label: 'Create Time', width: '12%' },
+          { id: 'actions', label: 'Actions', width: '5%' }
+        ].map(column => (
+          <TableCell
+            key={column.id}
+            sx={{
+              color: theme => theme.palette.mode === 'dark' ? '#FFFFFF' : '#1E293B',
+              backgroundColor: theme => theme.palette.mode === 'dark' 
+                ? 'rgba(26, 28, 30, 0.95)'
+                : 'rgba(248, 250, 252, 0.95)',
+              fontWeight: 600,
+              padding: '12px 8px',
+              whiteSpace: 'nowrap',
+              width: column.width,
+              position: 'sticky',
+              top: 0,
+              zIndex: 1
+            }}
+          >
+            {column.id === 'actions' ? column.label : renderSortLabel(column.label, column.id)}
+          </TableCell>
+        ))}
       </TableRow>
     </TableHead>
   );
@@ -548,170 +768,229 @@ const AccountDetails = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{
               width: 300,
-              backgroundColor: "#1E1E1E",
-              input: { color: "white" },
+              backgroundColor: "transparent",
               "& .MuiOutlinedInput-root": {
-                "& fieldset": { borderColor: "rgba(255, 255, 255, 0.23)" },
+                backgroundColor: theme => theme.palette.mode === 'dark' 
+                  ? "rgba(26, 28, 30, 0.7)"
+                  : "rgba(248, 250, 252, 0.95)",
+                color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                "& fieldset": {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.1)",
+                },
+                "&:hover fieldset": {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.2)"
+                    : "rgba(0, 0, 0, 0.2)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#3b82f6",
+                }
               },
+              "& .MuiInputBase-input": {
+                "&::placeholder": {
+                  color: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.5)"
+                    : "rgba(0, 0, 0, 0.5)",
+                  opacity: 1
+                }
+              }
             }}
           />
         </Box>
 
-        <TableContainer
-          component={Paper}
-          sx={{ backgroundColor: "transparent" }}
-        >
-          <Table
+        <Box sx={{ 
+          width: '100%',
+          overflow: 'hidden',
+          borderRadius: '12px',
+          boxShadow: theme => theme.palette.mode === 'dark'
+            ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+            : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          border: theme => theme.palette.mode === 'dark'
+            ? '1px solid rgba(255, 255, 255, 0.1)'
+            : '1px solid rgba(0, 0, 0, 0.1)',
+          position: 'relative',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            width: '100%',
+            height: '20px',
+            background: theme => theme.palette.mode === 'dark'
+              ? 'linear-gradient(to top, rgba(26, 28, 30, 1) 0%, rgba(26, 28, 30, 0) 100%)'
+              : 'linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%)',
+            pointerEvents: 'none',
+            borderBottomLeftRadius: '12px',
+            borderBottomRightRadius: '12px',
+            zIndex: 2
+          }
+        }}>
+          <TableContainer
+            component={Paper}
             sx={{
-              "& .MuiTableCell-root": {
-                borderColor: "rgba(255, 255, 255, 0.1)",
+              backgroundColor: theme => theme.palette.mode === 'dark' 
+                ? 'rgba(26, 28, 30, 0.7)'
+                : 'rgba(255, 255, 255, 0.95)',
+              maxHeight: 'calc(100vh - 300px)',
+              width: '100%',
+              overflowX: 'auto',
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+                height: '8px'
               },
+              '&::-webkit-scrollbar-track': {
+                background: 'transparent'
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: theme => theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.2)'
+                  : 'rgba(0, 0, 0, 0.2)',
+                borderRadius: '4px',
+                '&:hover': {
+                  background: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.3)'
+                    : 'rgba(0, 0, 0, 0.3)'
+                }
+              },
+              '& .MuiTable-root': {
+                borderCollapse: 'separate',
+                borderSpacing: '0',
+                width: '100%',
+                tableLayout: 'fixed'
+              },
+              '& .MuiTableRow-root:last-child .MuiTableCell-root': {
+                borderBottom: 'none'
+              }
             }}
           >
-            {renderOrdersTableHeader()}
-            <TableBody>
-              {orders.map((order: any, index: number) => (
-                <TableRow key={order.orderid}>
-                  <TableCell sx={{ color: "white" }}>{index + 1}</TableCell>
-                  <TableCell sx={{ color: "white" }}>
-                    {order.tradingsymbol}
-                  </TableCell>
-                  <TableCell sx={{ color: "white" }}>
-                    {order.producttype || "CARRYFORWARD"}
-                  </TableCell>
-                  <TableCell>
-                    <Box
-                      sx={{
-                        color:
-                          order.transactiontype === "BUY"
-                            ? "#00d25b"
-                            : "#fc424a",
-                        backgroundColor:
-                          order.transactiontype === "BUY"
-                            ? "rgba(0, 210, 91, 0.2)"
-                            : "rgba(252, 66, 74, 0.2)",
-                        display: "inline-block",
-                        px: 2,
-                        py: 0.5,
-                        borderRadius: 1,
-                        textShadow:
-                          order.transactiontype === "BUY"
-                            ? "0 0 10px rgba(0, 210, 91, 0.5)"
-                            : "0 0 10px rgba(252, 66, 74, 0.5)",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {order.transactiontype}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box
-                      sx={{ display: "flex", gap: 0.5, alignItems: "center" }}
-                    >
-                      <Typography sx={{ color: "#00d25b" }}>
-                        {order.filledshares}
-                      </Typography>
-                      <Typography sx={{ color: "white" }}>
-                        /{order.quantity}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ color: "white" }}>
-                    {order.ordertype}
-                  </TableCell>
-                  <TableCell sx={{ color: "white" }}>
-                    {Number(order.price).toFixed(2)}
-                  </TableCell>
-                  <TableCell sx={{ color: "white" }}>{order.orderid}</TableCell>
-                  <TableCell>
-                    <Box
-                      sx={{
-                        color:
-                          order.status === "complete"
-                            ? "#00d25b"
-                            : order.status === "rejected" ||
-                              order.status === "cancelled"
-                            ? "#fc424a"
-                            : order.status === "pending"
-                            ? "#F59E0B"
-                            : "#6B7280",
-                        backgroundColor:
-                          order.status === "complete"
-                            ? "rgba(0, 210, 91, 0.2)"
-                            : order.status === "rejected" ||
-                              order.status === "cancelled"
-                            ? "rgba(252, 66, 74, 0.2)"
-                            : order.status === "pending"
-                            ? "rgba(245, 158, 11, 0.2)"
-                            : "rgba(107, 114, 128, 0.2)",
-                        display: "inline-block",
-                        px: 2,
-                        py: 0.5,
-                        borderRadius: 1,
-                        textShadow:
-                          order.status === "complete"
-                            ? "0 0 10px rgba(0, 210, 91, 0.5)"
-                            : order.status === "rejected" ||
-                              order.status === "cancelled"
-                            ? "0 0 10px rgba(252, 66, 74, 0.5)"
-                            : order.status === "pending"
-                            ? "0 0 10px rgba(245, 158, 11, 0.5)"
-                            : "none",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {order.status === "complete"
-                        ? "COMPLETE"
-                        : order.status === "rejected"
-                        ? "REJECTED"
-                        : order.status === "pending"
-                        ? "PENDING"
-                        : order.status === "cancelled"
-                        ? "CANCELLED"
-                        : order.status.toUpperCase()}
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ color: "white" }}>
-                    {order.updatetime}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      disabled={["complete", "cancelled", "rejected"].includes(
-                        order.status.toLowerCase()
-                      )}
-                      onClick={(e) => handleMenuClick(e, order)}
-                      sx={{
-                        color: "white",
-                        backgroundColor: "#4B5563",
-                        "&:hover": { backgroundColor: "#374151" },
-                        "&.Mui-disabled": {
-                          backgroundColor: "#1F2937",
-                          color: "#6B7280",
-                        },
-                      }}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {orders.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={10}
-                    align="center"
-                    sx={{ color: "white" }}
+            <Table stickyHeader size="small">
+              {renderOrdersTableHeader()}
+              <TableBody>
+                {orders.map((order: any) => (
+                  <TableRow
+                    key={order.orderid}
+                    hover
+                    sx={{
+                      '&:nth-of-type(odd)': {
+                        backgroundColor: theme => theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.03)'
+                          : 'rgba(0, 0, 0, 0.02)'
+                      },
+                      '&:hover': {
+                        backgroundColor: theme => theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.07) !important'
+                          : 'rgba(0, 0, 0, 0.04) !important'
+                      },
+                      '&:last-child td': {
+                        borderBottom: 0
+                      }
+                    }}
                   >
-                    {searchQuery
-                      ? "No matching orders found"
-                      : "No orders found"}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                    <TableCell sx={{ width: '13%', padding: '8px 12px' }}>
+                      {order.tradingsymbol}
+                    </TableCell>
+                    <TableCell sx={{ width: '11%', padding: '8px 12px' }}>
+                      {order.producttype || "CARRYFORWARD"}
+                    </TableCell>
+                    <TableCell sx={{ width: '9%', padding: '8px 12px' }}>
+                      <Box
+                        sx={{
+                          color:
+                            order.transactiontype === "BUY"
+                              ? "#00d25b"
+                              : "#fc424a",
+                          backgroundColor:
+                            order.transactiontype === "BUY"
+                              ? "rgba(0, 210, 91, 0.2)"
+                              : "rgba(252, 66, 74, 0.2)",
+                          display: "inline-block",
+                          px: 2,
+                          py: 0.5,
+                          borderRadius: 1,
+                          textShadow:
+                            order.transactiontype === "BUY"
+                              ? "0 0 10px rgba(0, 210, 91, 0.5)"
+                              : "0 0 10px rgba(252, 66, 74, 0.5)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {order.transactiontype}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ width: '11%', padding: '8px 12px' }}>
+                      <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
+                        <Typography sx={{ color: "#00d25b" }}>
+                          {order.filledshares}
+                        </Typography>
+                        <Typography sx={{ color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B' }}>
+                          /{order.quantity}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ width: '11%', padding: '8px 12px' }}>
+                      {order.ordertype}
+                    </TableCell>
+                    <TableCell sx={{ width: '9%', padding: '8px 12px' }}>
+                      {Number(order.price).toFixed(2)}
+                    </TableCell>
+                    <TableCell sx={{ width: '15%', padding: '8px 12px' }}>
+                      {order.orderid}
+                    </TableCell>
+                    <TableCell sx={{ width: '9%', padding: '8px 12px' }}>
+                      {getStatusBadge(order.status)}
+                    </TableCell>
+                    <TableCell sx={{ width: '12%', padding: '8px 12px' }}>
+                      {order.updatetime}
+                    </TableCell>
+                    <TableCell sx={{ width: '5%', padding: '8px 12px' }}>
+                      <IconButton
+                        size="small"
+                        disabled={["complete", "cancelled", "rejected"].includes(
+                          order.status.toLowerCase()
+                        )}
+                        onClick={(e) => handleMenuClick(e, order)}
+                        sx={{
+                          color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                          backgroundColor: theme => theme.palette.mode === 'dark' ? '#4B5563' : '#E5E7EB',
+                          '&:hover': { 
+                            backgroundColor: theme => theme.palette.mode === 'dark' ? '#374151' : '#D1D5DB'
+                          },
+                          '&.Mui-disabled': {
+                            backgroundColor: theme => theme.palette.mode === 'dark' ? '#1F2937' : '#F3F4F6',
+                            color: theme => theme.palette.mode === 'dark' ? '#6B7280' : '#9CA3AF',
+                          },
+                        }}
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {orders.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={10}
+                      align="center"
+                      sx={{
+                        color: theme => theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.7)'
+                          : 'rgba(0, 0, 0, 0.7)',
+                        padding: '24px 8px'
+                      }}
+                    >
+                      {searchQuery
+                        ? "No matching orders found"
+                        : "No orders found"}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
 
         <Menu
           anchorEl={anchorEl}
@@ -719,11 +998,13 @@ const AccountDetails = () => {
           onClose={handleMenuClose}
           PaperProps={{
             sx: {
-              backgroundColor: "#1A1C1E",
-              color: "white",
-              "& .MuiMenuItem-root": {
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+              backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#FFFFFF',
+              color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+              '& .MuiMenuItem-root': {
+                '&:hover': {
+                  backgroundColor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.1)'
+                    : 'rgba(0, 0, 0, 0.04)',
                 },
               },
             },
@@ -743,28 +1024,31 @@ const AccountDetails = () => {
   const renderTradesTableHeader = () => (
     <TableHead>
       <TableRow>
-        <TableCell sx={{ color: "white" }}>Id</TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Symbol", "tradingsymbol")}
+        {[
+          { id: 'id', label: 'Id' },
+          { id: 'tradingsymbol', label: 'Symbol' },
+          { id: 'producttype', label: 'Product' },
+          { id: 'fillsize', label: 'Quantity' },
+          { id: 'transactiontype', label: 'B/S' },
+          { id: 'fillprice', label: 'Price' },
+          { id: 'orderid', label: 'Order Id' },
+          { id: 'filltime', label: 'Create Time' }
+        ].map(column => (
+          <TableCell
+            key={column.id}
+            sx={{
+              color: theme => theme.palette.mode === 'dark' ? '#FFFFFF' : '#1E293B',
+              backgroundColor: theme => theme.palette.mode === 'dark' 
+                ? 'rgba(26, 28, 30, 0.95)'
+                : 'rgba(248, 250, 252, 0.95)',
+              fontWeight: 600,
+              padding: '16px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {column.id === 'id' ? column.label : renderSortLabel(column.label, column.id)}
         </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Product", "producttype")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Quantity", "fillsize")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("B/S", "transactiontype")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Price", "fillprice")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Order Id", "orderid")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Create Time", "filltime")}
-        </TableCell>
+        ))}
       </TableRow>
     </TableHead>
   );
@@ -800,41 +1084,146 @@ const AccountDetails = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{
               width: 300,
-              backgroundColor: "#1E1E1E",
-              input: { color: "white" },
+              backgroundColor: "transparent",
               "& .MuiOutlinedInput-root": {
-                "& fieldset": { borderColor: "rgba(255, 255, 255, 0.23)" },
+                backgroundColor: theme => theme.palette.mode === 'dark' 
+                  ? "rgba(26, 28, 30, 0.7)"
+                  : "rgba(248, 250, 252, 0.95)",
+                color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                "& fieldset": {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.1)",
+                },
+                "&:hover fieldset": {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.2)"
+                    : "rgba(0, 0, 0, 0.2)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#3b82f6",
+                }
               },
+              "& .MuiInputBase-input": {
+                "&::placeholder": {
+                  color: theme => theme.palette.mode === 'dark'
+                    ? "rgba(255, 255, 255, 0.5)"
+                    : "rgba(0, 0, 0, 0.5)",
+                  opacity: 1
+                }
+              }
             }}
           />
         </Box>
 
         <TableContainer
           component={Paper}
-          sx={{ backgroundColor: "transparent" }}
-        >
-          <Table
             sx={{
-              "& .MuiTableCell-root": {
-                borderColor: "rgba(255, 255, 255, 0.1)",
-              },
-            }}
-          >
+            backgroundColor: theme => theme.palette.mode === 'dark' 
+              ? 'rgba(26, 28, 30, 0.7)'
+              : 'rgba(255, 255, 255, 0.95)',
+            maxHeight: 'calc(100vh - 300px)',
+            position: 'relative',
+            overflow: 'auto',
+            borderRadius: '12px',
+            boxShadow: theme => theme.palette.mode === 'dark'
+              ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+              : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            border: theme => theme.palette.mode === 'dark'
+              ? '1px solid rgba(255, 255, 255, 0.1)'
+              : '1px solid rgba(0, 0, 0, 0.1)',
+            '& .MuiTable-root': {
+              borderCollapse: 'separate',
+              borderSpacing: '0',
+            }
+          }}
+        >
+          <Table stickyHeader size="small">
             {renderTradesTableHeader()}
             <TableBody>
               {trades.map((trade: any, index: number) => (
-                <TableRow key={trade.fillid}>
-                  <TableCell sx={{ color: "white" }}>{index + 1}</TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                <TableRow
+                  key={trade.fillid}
+                  hover
+                  sx={{
+                    '&:nth-of-type(odd)': {
+                      backgroundColor: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.03)'
+                        : 'rgba(0, 0, 0, 0.02)'
+                    },
+                    '&:hover': {
+                      backgroundColor: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.07) !important'
+                        : 'rgba(0, 0, 0, 0.04) !important'
+                    },
+                    '&:last-child td': {
+                      borderBottom: 0
+                    }
+                  }}
+                >
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
+                    {index + 1}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {trade.tradingsymbol}
                   </TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {trade.producttype}
                   </TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {trade.fillsize}
                   </TableCell>
-                  <TableCell>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     <Box
                       sx={{
                         display: "inline-block",
@@ -859,18 +1248,59 @@ const AccountDetails = () => {
                       {trade.transactiontype}
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {Number(trade.fillprice).toFixed(2)}
                   </TableCell>
-                  <TableCell sx={{ color: "white" }}>{trade.orderid}</TableCell>
-                  <TableCell sx={{ color: "white" }}>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
+                    {trade.orderid}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : 'rgba(0, 0, 0, 0.9)',
+                      padding: '8px 12px',
+                      borderBottom: theme => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     {trade.filltime}
                   </TableCell>
                 </TableRow>
               ))}
               {trades.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ color: "white" }}>
+                  <TableCell
+                    colSpan={8}
+                    align="center"
+                    sx={{
+                      color: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.7)'
+                        : 'rgba(0, 0, 0, 0.7)',
+                      padding: '24px 8px'
+                    }}
+                  >
                     {searchQuery
                       ? "No matching trades found"
                       : "No trades found"}
@@ -884,32 +1314,61 @@ const AccountDetails = () => {
     );
   };
 
-  const renderPositionsTableHeader = () => (
-    <TableHead>
-      <TableRow>
-        <TableCell sx={{ color: "white" }}>Id</TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Symbol", "tradingsymbol")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Product", "producttype")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>Action</TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Quantity", "buyqty")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Pnl", "pnl")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Ltp", "ltp")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>
-          {renderSortLabel("Avgprice", "avgnetprice")}
-        </TableCell>
-        <TableCell sx={{ color: "white" }}>Square Off</TableCell>
-      </TableRow>
-    </TableHead>
+  const getStatusBadge = (status: string) => (
+    <Box
+      sx={{
+        color: status.toLowerCase() === 'complete' ? '#22C55E'
+          : status.toLowerCase() === 'cancelled' ? '#EF4444'
+          : status.toLowerCase() === 'rejected' ? '#EF4444'
+          : status.toLowerCase() === 'pending' ? '#F59E0B'
+          : '#22C55E',
+        backgroundColor: status.toLowerCase() === 'complete' ? 'rgba(34, 197, 94, 0.2)'
+          : status.toLowerCase() === 'cancelled' ? 'rgba(239, 68, 68, 0.2)'
+          : status.toLowerCase() === 'rejected' ? 'rgba(239, 68, 68, 0.2)'
+          : status.toLowerCase() === 'pending' ? 'rgba(245, 158, 11, 0.2)'
+          : 'rgba(34, 197, 94, 0.2)',
+        display: 'inline-block',
+        px: 1,
+        py: 0.25,
+        borderRadius: 1,
+        textShadow: theme => theme.palette.mode === 'dark'
+          ? `0 0 10px ${
+            status.toLowerCase() === 'complete' ? 'rgba(34, 197, 94, 0.5)'
+            : status.toLowerCase() === 'cancelled' ? 'rgba(239, 68, 68, 0.5)'
+            : status.toLowerCase() === 'rejected' ? 'rgba(239, 68, 68, 0.5)'
+            : status.toLowerCase() === 'pending' ? 'rgba(245, 158, 11, 0.5)'
+            : 'rgba(34, 197, 94, 0.5)'
+          }`
+          : 'none',
+        fontWeight: 500,
+        fontSize: '0.75rem'
+      }}
+    >
+      {status.toUpperCase()}
+    </Box>
+  );
+
+  const getTransactionBadge = (type: string) => (
+    <Box
+      sx={{
+        color: type.toLowerCase() === 'buy' 
+          ? theme => theme.palette.mode === 'dark' ? '#22C55E' : '#059669'
+          : theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626',
+        backgroundColor: type.toLowerCase() === 'buy'
+          ? theme => theme.palette.mode === 'dark' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(5, 150, 105, 0.1)'
+          : theme => theme.palette.mode === 'dark' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(220, 38, 38, 0.1)',
+        display: 'inline-block',
+        px: 2,
+        py: 0.5,
+        borderRadius: 1,
+        fontWeight: 600,
+        fontSize: '0.875rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.025em'
+      }}
+    >
+      {type}
+    </Box>
   );
 
   return (
@@ -925,58 +1384,62 @@ const AccountDetails = () => {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            mb: 2,
-            backgroundColor: "#1A1C1E",
+            mb: 3,
+            backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#FFFFFF',
             p: 2,
             borderRadius: 1,
+            boxShadow: theme => theme.palette.mode === 'dark' 
+              ? '0 4px 6px -1px rgba(0, 0, 0, 0.5)' 
+              : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <IconButton
               onClick={handleBack}
+              size="small"
               sx={{
-                backgroundColor: "#0EA5E9",
-                "&:hover": { backgroundColor: "#0284C7" },
+                backgroundColor: '#0EA5E9',
+                '&:hover': { backgroundColor: '#0284C7' },
+                padding: '8px'
               }}
             >
-              <ArrowBackIcon sx={{ color: "white" }} />
+              <ArrowBackIcon sx={{ color: 'white', fontSize: '1.2rem' }} />
             </IconButton>
-            <Typography variant="h6" sx={{ color: "white" }}>
-              {accountName}
+            <Typography variant="h6" sx={{ 
+              color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+              fontWeight: 600 
+            }}>
+              Account Details
             </Typography>
           </Box>
-
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Typography sx={{ color: "grey.500" }}>Margin</Typography>
-            <Typography variant="h6" sx={{ color: "white" }}>
-              {margin.toFixed(2)}
+            <Typography variant="subtitle1" sx={{ 
+              color: theme => theme.palette.mode === 'dark' ? '#94A3B8' : '#64748B'
+            }}>
+              {accountName}
             </Typography>
-            <Typography sx={{ color: "grey.500" }}>PnL</Typography>
-            <Typography
-              variant="h6"
-              sx={{ color: pnl >= 0 ? "#22C55E" : "#EF4444" }}
-            >
-              {pnl.toFixed(2)}
+            <Typography variant="subtitle1" sx={{ 
+              color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B'
+            }}>
+              Margin: {margin}
             </Typography>
-            <Button
-              variant="contained"
+            <Typography variant="subtitle1" sx={{ 
+              color: pnl >= 0 ? '#22C55E' : '#EF4444',
+              fontWeight: 600
+            }}>
+              PnL: {pnl}
+            </Typography>
+            <IconButton
+              onClick={fetchAccountDetails}
+              size="small"
               sx={{
-                backgroundColor: "#0EA5E9",
-                "&:hover": { backgroundColor: "#0284C7" },
+                backgroundColor: '#8B5CF6',
+                '&:hover': { backgroundColor: '#7C3AED' },
+                padding: '8px'
               }}
             >
-              Place Order
-            </Button>
-            <LoadingButton
-              loading={loading}
-              onClick={() => fetchAccountDetails()}
-              sx={{
-                backgroundColor: "#8B5CF6",
-                "&:hover": { backgroundColor: "#7C3AED" },
-              }}
-            >
-              <SyncIcon sx={{ color: "white" }} />
-            </LoadingButton>
+              <SyncIcon sx={{ color: 'white', fontSize: '1.2rem' }} />
+            </IconButton>
           </Box>
         </Box>
 
@@ -984,10 +1447,13 @@ const AccountDetails = () => {
         <Box
           sx={{
             display: "flex",
-            backgroundColor: "#1A1C1E",
+            backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#F8FAFC',
             borderRadius: 1,
-            mb: 2,
+            mb: 3,
             overflow: "hidden",
+            border: theme => theme.palette.mode === 'dark'
+              ? '1px solid rgba(255, 255, 255, 0.1)'
+              : '1px solid rgba(0, 0, 0, 0.1)',
           }}
         >
           <Button
@@ -997,14 +1463,25 @@ const AccountDetails = () => {
               flex: 1,
               py: 1.5,
               borderRadius: 0,
-              backgroundColor:
-                activeTab === "positions" ? "#000" : "transparent",
-              color: activeTab === "positions" ? "white" : "grey.500",
-              "&:hover": {
-                backgroundColor:
-                  activeTab === "positions"
-                    ? "#000"
-                    : "rgba(255, 255, 255, 0.1)",
+              backgroundColor: theme => {
+                if (activeTab === "positions") {
+                  return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                }
+                return 'transparent';
+              },
+              color: theme => {
+                if (activeTab === "positions") {
+                  return 'white';
+                }
+                return theme.palette.mode === 'dark' ? 'grey.500' : '#64748B';
+              },
+              '&:hover': {
+                backgroundColor: theme => {
+                  if (activeTab === "positions") {
+                    return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                  }
+                  return theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                },
               },
             }}
           >
@@ -1017,11 +1494,25 @@ const AccountDetails = () => {
               flex: 1,
               py: 1.5,
               borderRadius: 0,
-              backgroundColor: activeTab === "orders" ? "#000" : "transparent",
-              color: activeTab === "orders" ? "white" : "grey.500",
-              "&:hover": {
-                backgroundColor:
-                  activeTab === "orders" ? "#000" : "rgba(255, 255, 255, 0.1)",
+              backgroundColor: theme => {
+                if (activeTab === "orders") {
+                  return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                }
+                return 'transparent';
+              },
+              color: theme => {
+                if (activeTab === "orders") {
+                  return 'white';
+                }
+                return theme.palette.mode === 'dark' ? 'grey.500' : '#64748B';
+              },
+              '&:hover': {
+                backgroundColor: theme => {
+                  if (activeTab === "orders") {
+                    return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                  }
+                  return theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                },
               },
             }}
           >
@@ -1034,11 +1525,25 @@ const AccountDetails = () => {
               flex: 1,
               py: 1.5,
               borderRadius: 0,
-              backgroundColor: activeTab === "trades" ? "#000" : "transparent",
-              color: activeTab === "trades" ? "white" : "grey.500",
-              "&:hover": {
-                backgroundColor:
-                  activeTab === "trades" ? "#000" : "rgba(255, 255, 255, 0.1)",
+              backgroundColor: theme => {
+                if (activeTab === "trades") {
+                  return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                }
+                return 'transparent';
+              },
+              color: theme => {
+                if (activeTab === "trades") {
+                  return 'white';
+                }
+                return theme.palette.mode === 'dark' ? 'grey.500' : '#64748B';
+              },
+              '&:hover': {
+                backgroundColor: theme => {
+                  if (activeTab === "trades") {
+                    return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                  }
+                  return theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                },
               },
             }}
           >
@@ -1046,10 +1551,80 @@ const AccountDetails = () => {
           </Button>
         </Box>
 
+        {/* Actions Bar */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          mb: 2,
+          gap: 2
+        }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<FileDownloadIcon />}
+              onClick={handleExportToExcel}
+              disabled={getTableData().length === 0}
+              sx={{
+                backgroundColor: '#0EA5E9',
+                '&:hover': { backgroundColor: '#0284C7' },
+                '&.Mui-disabled': {
+                  backgroundColor: theme => theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.12)' 
+                    : 'rgba(0, 0, 0, 0.12)',
+                }
+              }}
+            >
+              Export to CSV
+            </Button>
+            {activeTab === 'positions' && (
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleSquareOffAll}
+                disabled={getTableData().length === 0}
+                sx={{
+                  backgroundColor: '#DC2626',
+                  '&:hover': { backgroundColor: '#B91C1C' },
+                  '&.Mui-disabled': {
+                    backgroundColor: theme => theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.12)' 
+                      : 'rgba(0, 0, 0, 0.12)',
+                  }
+                }}
+              >
+                Square Off All
+              </Button>
+            )}
+            {activeTab === 'orders' && (
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleCancelAllOrders}
+                disabled={getTableData().length === 0}
+                sx={{
+                  backgroundColor: '#DC2626',
+                  '&:hover': { backgroundColor: '#B91C1C' },
+                  '&.Mui-disabled': {
+                    backgroundColor: theme => theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.12)' 
+                      : 'rgba(0, 0, 0, 0.12)',
+                  }
+                }}
+              >
+                Cancel All Orders
+              </Button>
+            )}
+          </Box>
+
+        </Box>
+
         {/* Content Area */}
         <Box
           sx={{
-            backgroundColor: "#1A1C1E",
+            backgroundColor: theme => theme.palette.mode === 'dark' 
+              ? '#1A1C1E'
+              : '#FFFFFF',
             borderRadius: 1,
             p: 2,
           }}

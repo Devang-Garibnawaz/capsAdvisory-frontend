@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminAppBar from "../../admin/components/AdminAppBar";
 import AdminToolbar from "../../admin/components/AdminToolbar";
@@ -22,7 +22,17 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  Paper,
+  TextField,
+  InputAdornment
 } from "@mui/material";
 import CreateGroup from "../components/CreateGroup";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
@@ -30,7 +40,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import { getGroups, createGroup, deleteGroup, Group, toggleMaster, toggleTrading, addChildToGroup, getGroupChildren, GroupChild, removeChildFromGroup, squareOffAllByGroup } from "../hooks/groupManagementService";
-import { getDematAccounts, updateDematAccountTradeToggle, cancelAllOrders } from "../hooks/accountManagementService";
+import { getDematAccounts, updateDematAccountTradeToggle, cancelOrderByOrderId, cancelAllOrdersByGroup, squareOffByUser } from "../hooks/accountManagementService";
 import { BrokerAccount, GroupStats } from '../types';
 import AddChildAccount from '../components/AddChildAccount';
 import BrokerCard from '../components/BrokerCard';
@@ -50,6 +60,8 @@ interface GroupDetailsViewProps {
   isTogglingTrading: boolean;
   masterAccountName?: string;
   setRefreshFunction: (fn: () => Promise<void>) => void;
+  brokerAccounts: BrokerAccount[];
+  setBrokerAccounts: (accounts: BrokerAccount[]) => void;
 }
 
 const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
@@ -62,6 +74,8 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
   isTogglingTrading,
   masterAccountName,
   setRefreshFunction,
+  brokerAccounts,
+  setBrokerAccounts,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('');
@@ -69,8 +83,20 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
   const [groupChildren, setGroupChildren] = useState<GroupChild[]>([]);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [togglingAccountId, setTogglingAccountId] = useState<string | null>(null);
+  const [tableState, setTableState] = useState<TableState>({
+    activeTab: 'positions',
+    searchQuery: '',
+    orderBy: '',
+    order: 'asc'
+  });
+  const [tableData, setTableData] = useState<TableData>({
+    positions: [],
+    orders: [],
+    trades: []
+  });
   const snackbar = useSnackbar();
   const navigate = useNavigate();
+  const ws = useRef<WebSocket | null>(null);
 
   const fetchGroupChildren = async () => {
     try {
@@ -78,7 +104,6 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
       const response = await getGroupChildren(group._id);
       
       if (response.status) {
-        // Transform the demat accounts into the format expected by BrokerCard
         const transformedAccounts = response.dematAccounts.map((account: any) => ({
           _id: account._id,
           name: `${account.fullName}-angelone-${account.clientId}`,
@@ -89,11 +114,9 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
           stats: account.stats
         }));
         setGroupChildren(transformedAccounts);
-      } else {
-        snackbar.error(response.message || 'Failed to fetch group children');
       }
     } catch (error: any) {
-      snackbar.error('Error fetching group children: ' + error.message);
+      console.error('Error fetching group children:', error.message);
     } finally {
       setIsLoadingChildren(false);
     }
@@ -103,6 +126,67 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
   useEffect(() => {
     fetchGroupChildren();
   }, [group._id]);
+
+  // Update table data when group children change
+  useEffect(() => {
+    const positions: any[] = [];
+    const orders: any[] = [];
+    const trades: any[] = [];
+
+    groupChildren.forEach(child => {
+      if (child.stats?.position) {
+        positions.push(...Object.values(child.stats.position));
+      }
+      if (child.stats?.orders?.orders) {
+        orders.push(...Object.values(child.stats.orders.orders));
+      }
+      if (child.stats?.trades) {
+        trades.push(...Object.values(child.stats.trades));
+      }
+    });
+
+    setTableData({ positions, orders, trades });
+  }, [groupChildren]);
+
+
+  useEffect(() => {
+    const token = localStorage.getItem('authkey');
+    if (ws.current) {
+      ws.current.close();
+    }
+    
+    ws.current = new WebSocket(`ws://localhost:8080/ws/demat?token=${token}&group=${group._id}`) as WebSocket;
+
+    if (ws.current) {
+      (ws.current as WebSocket).onopen = () => console.log('Connected');
+      (ws.current as WebSocket).onmessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'demat_accounts') {
+          const transformedAccounts = data?.data?.dematAccounts.map((account: any) => ({
+            _id: account._id,
+            name: `${account.fullName}-angelone-${account.clientId}`,
+            accountId: account._id,
+            status: account.isTradeEnable ? 'active' : 'inactive',
+            multiplier: account.multiplier || 1,
+            fixLot: account.fixLot || false,
+            stats: account.stats
+          }));
+          setGroupChildren(transformedAccounts);
+        }
+      };
+      (ws.current as WebSocket).onclose = () => console.log('Disconnected');
+    }
+
+    return () => {
+      if (ws.current) {
+        (ws.current as WebSocket).close();
+      }
+    };
+  }, []);
+
+  const handleRefresh = async () => {
+    await fetchGroupChildren();
+  };
 
   const handleToggleTrading = async (accountId: string) => {
     try {
@@ -134,11 +218,6 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
     }
   };
 
-  const handleRefresh = (accountId: string) => {
-    // TODO: Implement refresh for child account
-    console.log('Refresh account:', accountId);
-  };
-
   const handleDelete = async (accountId: string) => {
     try {
       const response = await removeChildFromGroup(group._id, accountId);
@@ -161,9 +240,13 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
     navigate(`/admin/account/${accountId}`);
   };
 
-  const handleCancelAllOrders = async (groupId='', dematAccountId='') => {
+  const handleCancelAllOrders = async (groupId='') => {
     try {
-      const response = await cancelAllOrders(groupId,dematAccountId);
+      const orderids = tableData.orders
+        .filter((order: any) => !["complete", "rejected", "cancelled"].includes(order.status?.toLowerCase()))
+        .map((order: any) => order.orderid);
+
+      const response = await cancelAllOrdersByGroup(groupId,orderids);
       
       if (response.status) {
         snackbar.success(response.message);
@@ -190,6 +273,164 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
     }
   };
 
+  const handleSquareOff = async (row: any) => {
+    try {
+      const response = await squareOffByUser(row);
+      if (response.status) {
+        snackbar.success(response.message);
+      } else {
+        snackbar.error(response.message || 'Failed to square off');
+      }
+    } catch (error: any) {
+      snackbar.error('Error square off: ' + error.message);
+    }
+  };
+
+  const handleSort = (property: string) => {
+    const isAsc = tableState.orderBy === property && tableState.order === 'asc';
+    setTableState({
+      ...tableState,
+      order: isAsc ? 'desc' : 'asc',
+      orderBy: property
+    });
+  };
+
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTableState({
+      ...tableState,
+      searchQuery: event.target.value
+    });
+  };
+
+  const handleTabChange = (tab: 'positions' | 'orders' | 'trades') => {
+    setTableState({
+      ...tableState,
+      activeTab: tab
+    });
+  };
+
+  const getTableData = () => {
+    const { activeTab, searchQuery, orderBy, order } = tableState;
+    let data = tableData[activeTab];
+
+    // Filter data
+    if (searchQuery) {
+      const lowercaseQuery = searchQuery.toLowerCase();
+      data = data.filter((item: any) =>
+        Object.values(item).some((value) =>
+          String(value).toLowerCase().includes(lowercaseQuery)
+        )
+      );
+    }
+
+    // For positions, ensure netqty is treated as a number
+    if (activeTab === 'positions') {
+      data = data.map(row => ({
+        ...row,
+        netqty: Number(row.netqty) || 0
+      }));
+    }
+
+    // Sort data
+    if (orderBy) {
+      data = [...data].sort((a, b) => {
+        let aValue = a[orderBy];
+        let bValue = b[orderBy];
+
+        // Convert numeric strings to numbers for proper sorting
+        if (typeof aValue === 'string' && !isNaN(Number(aValue))) {
+          aValue = Number(aValue);
+          bValue = Number(bValue);
+        }
+
+        // Handle dates
+        if (orderBy === 'exchtime' || orderBy === 'filltime') {
+          aValue = new Date(aValue).getTime();
+          bValue = new Date(bValue).getTime();
+        }
+
+        if (order === 'desc') {
+          return bValue > aValue ? 1 : bValue < aValue ? -1 : 0;
+        }
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      });
+    } else {
+      // Default sorting
+      if (activeTab === 'positions') {
+        // Sort by open/closed status first, then by netqty
+      data = [...data].sort((a, b) => {
+          const aIsOpen = Number(a.netqty) !== 0;
+          const bIsOpen = Number(b.netqty) !== 0;
+          if (aIsOpen && !bIsOpen) return -1;
+          if (!aIsOpen && bIsOpen) return 1;
+          return Math.abs(Number(b.netqty) || 0) - Math.abs(Number(a.netqty) || 0);
+        });
+      } else if (activeTab === 'orders' || activeTab === 'trades') {
+        // Default sort by time in descending order
+        data = [...data].sort((a, b) => {
+          const aTime = new Date(activeTab === 'orders' ? a.exchtime : a.filltime).getTime();
+          const bTime = new Date(activeTab === 'orders' ? b.exchtime : b.filltime).getTime();
+          return bTime - aTime;
+        });
+      }
+    }
+
+    return data;
+  };
+
+  // Helper function to create sortable column header
+  const SortableTableCell = ({ label, field }: { label: string; field: string }) => (
+    <TableCell 
+      sx={{ 
+        color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+        padding: '8px',
+        backgroundColor: theme => theme.palette.mode === 'dark' 
+          ? '#1A1C1E'
+          : '#F8FAFC',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1,
+        borderBottom: theme => theme.palette.mode === 'dark'
+          ? '1px solid rgba(255, 255, 255, 0.1)'
+          : '1px solid rgba(0, 0, 0, 0.1)',
+        cursor: 'pointer'
+      }}
+      onClick={() => handleSort(field)}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        {label}
+        <TableSortLabel
+          active={tableState.orderBy === field}
+          direction={tableState.orderBy === field ? tableState.order : 'asc'}
+          sx={{
+            '& .MuiTableSortLabel-icon': {
+              color: theme => theme.palette.mode === 'dark' ? 'white !important' : '#1E293B !important',
+            },
+            '&.Mui-active': {
+              color: theme => theme.palette.mode === 'dark' ? 'white !important' : '#1E293B !important',
+            },
+            color: theme => theme.palette.mode === 'dark' ? 'white !important' : '#1E293B !important',
+          }}
+        />
+      </Box>
+    </TableCell>
+  );
+
+  const handleCancelOrder = async (orderid: string) => {
+    try {
+      // TODO: Implement cancel order functionality
+      const result = await cancelOrderByOrderId(orderid);
+      if (result.status) {
+        snackbar.success(result.message);
+      } else {
+        snackbar.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      snackbar.error("Failed to cancel order");
+    }
+  };
+
   return (
     <Box>
       {/* Header */}
@@ -197,22 +438,28 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between',
-        mb: 2,
-        backgroundColor: '#1A1C1E',
-        p: 2,
-        borderRadius: 1
+        mb: 1.5,
+        backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#ffffff',
+        p: 1.5,
+        borderRadius: 1,
+        boxShadow: 1
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <IconButton 
             onClick={onBack}
+            size="small"
             sx={{ 
               backgroundColor: '#0EA5E9',
-              '&:hover': { backgroundColor: '#0284C7' }
+              '&:hover': { backgroundColor: '#0284C7' },
+              padding: '6px'
             }}
           >
-            <ArrowBackIcon sx={{ color: 'white' }} />
+            <ArrowBackIcon sx={{ color: 'white', fontSize: '1.2rem' }} />
           </IconButton>
-          <Typography variant="h6" sx={{ color: 'white' }}>
+          <Typography variant="subtitle1" sx={{ 
+            color: theme => theme.palette.mode === 'dark' ? 'white' : 'text.primary',
+            fontWeight: 500
+          }}>
             {group.name}
           </Typography>
           <Button
@@ -221,129 +468,95 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
               setRefreshFunction(fetchGroupChildren);
               onAddChild();
             }}
-            size="medium"
+            size="small"
             sx={{ 
               backgroundColor: '#0EA5E9',
               '&:hover': { backgroundColor: '#0284C7' },
-              py: 0.7,
-              px: 2,
-              textTransform: 'none'
+              py: 0.5,
+              px: 1.5,
+              textTransform: 'none',
+              fontSize: '0.875rem'
             }}
           >
             + Add Child
           </Button>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {masterAccountName && (
+              <Typography variant="body2" sx={{ 
+                color: theme => theme.palette.mode === 'dark' ? 'white' : 'text.primary'
+              }}>
+                <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#0EA5E9' }}>Master Account:</span> {masterAccountName}
+              </Typography>
+            )}
           <Button
             variant="contained"
             color="error"
             onClick={onToggleMaster}
             disabled={isTogglingMaster}
-            size="medium"
+              size="small"
             sx={{ 
-              py: 0.7,
-              px: 2,
-              textTransform: 'none'
-            }}
-            startIcon={isTogglingMaster ? <CircularProgress size={20} /> : undefined}
+                py: 0.5,
+                px: 1.5,
+                textTransform: 'none',
+                fontSize: '0.875rem'
+              }}
+              startIcon={isTogglingMaster ? <CircularProgress size={16} /> : undefined}
           >
             Disconnect Master
           </Button>
-          <Typography sx={{ color: 'grey.500' }}>
-            Place Rejected
-          </Typography>
-          <Switch
-            checked={placeRejected}
-            onChange={(e) => setPlaceRejected(e.target.checked)}
-            size="medium"
-          />
-          <Typography sx={{ color: 'grey.500' }}>
+          </Box>
+          <Typography variant="body2" sx={{ 
+            color: theme => theme.palette.mode === 'dark' ? 'grey.500' : 'text.secondary'
+          }}>
             Trading
           </Typography>
           <Switch
             checked={group.isTradeEnabled}
             onChange={onToggleTrading}
             disabled={isTogglingTrading}
-            size="medium"
+            size="small"
+            sx={{
+              '& .MuiSwitch-thumb': {
+                  backgroundColor: !group.isTradeEnabled ? '#DC2626 !important' : '#22C55E !important'
+              },
+              '& .MuiSwitch-track': {
+                backgroundColor: !group.isTradeEnabled ? '#DC2626 !important' : '#22C55E !important'
+              }
+            }}
           />
-          <Typography variant="h6" sx={{ color: 'white', ml: 2 }}>
-            0/2
+          <Typography variant="subtitle2" sx={{ 
+            color: tableData.positions.reduce((sum, pos) => sum + (Number(pos.pnl) || 0), 0) >= 0 ? '#22C55E' : '#EF4444',
+            ml: 1.5
+          }}>
+            PNL: {tableData.positions.reduce((sum, pos) => sum + (Number(pos.pnl) || 0), 0).toFixed(2)}
           </Typography>
           <Button
             variant="contained"
             color="success"
-            size="medium"
+            size="small"
             sx={{ 
-              py: 0.7,
-              px: 2,
-              textTransform: 'none'
+              py: 0.5,
+              px: 1.5,
+              textTransform: 'none',
+              fontSize: '0.875rem'
             }}
           >
             Place Order
           </Button>
           <IconButton 
             onClick={fetchGroupChildren}
-            size="medium"
+            size="small"
             sx={{ 
               backgroundColor: '#8B5CF6',
-              '&:hover': { backgroundColor: '#7C3AED' }
+              '&:hover': { backgroundColor: '#7C3AED' },
+              padding: '6px'
             }}
           >
-            <SyncIcon sx={{ color: 'white', fontSize: '1.3rem' }} />
+            <SyncIcon sx={{ color: 'white', fontSize: '1.2rem' }} />
           </IconButton>
-        </Box>
-      </Box>
-
-      {/* Search and Actions */}
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        mb: 2,
-        gap: 2
-      }}>
-        
-
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="contained"
-            color="error"
-            size="medium"
-            onClick={() => handleSquareOffAll(group._id)}
-            sx={{ 
-              py: 0.7,
-              px: 2,
-              textTransform: 'none'
-            }}
-          >
-            Square Off All
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            size="medium"
-            sx={{ 
-              py: 0.7,
-              px: 2,
-              textTransform: 'none'
-            }}
-          >
-            Convert To Market All
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            size="medium"
-            onClick={() => handleCancelAllOrders(group._id, '')}
-            sx={{ 
-              py: 0.7,
-              px: 2,
-              textTransform: 'none'
-            }}
-          >
-            Cancel All
-          </Button>
         </Box>
       </Box>
 
@@ -359,32 +572,589 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
             <CircularProgress />
           </Box>
         ) : groupChildren.length > 0 ? (
-          <Box 
-            sx={{ 
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, 1fr)',
-                md: 'repeat(3, 1fr)',
+          <>
+            <Box 
+              sx={{ 
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                },
+                gap: 3,
+              }}
+            >
+              {groupChildren.map((child) => (
+                <BrokerCard
+                  key={child._id}
+                  name={child.name}
+                  margin={0}
+                  isTrading={child.status === 'active'}
+                  stats={child.stats}
+                  onToggleTrading={() => handleToggleTrading(child.accountId)}
+                  onRefresh={() => handleRefresh()}
+                  onDelete={() => handleDelete(child.accountId)}
+                  onView={() => handleView(child.accountId)}
+                  isToggling={togglingAccountId === child.accountId}
+                />
+              ))}
+      </Box>
+
+      {/* Search and Actions */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'flex-start',
+        mb: 2,
+        gap: 2
+      }}>
+        <TextField
+          placeholder="Search..."
+          value={tableState.searchQuery}
+          onChange={handleSearch}
+          size="small"
+          sx={{ 
+            backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#F8FAFC',
+            borderRadius: 1,
+            minWidth: '240px',
+            '& .MuiOutlinedInput-root': {
+              color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+              '& fieldset': {
+                borderColor: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.23)'
+                  : 'rgba(0, 0, 0, 0.23)',
               },
-              gap: 3,
+              '&:hover fieldset': {
+                borderColor: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.5)'
+                  : 'rgba(0, 0, 0, 0.5)',
+              },
+            },
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ 
+                  color: theme => theme.palette.mode === 'dark' ? 'white' : '#64748B'
+                }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        {tableState.activeTab === 'positions' && (
+          <Button
+            variant="contained"
+            color="error"
+            size="medium"
+            onClick={() => handleSquareOffAll(group._id)}
+            disabled={!tableData.positions.some(pos => Number(pos.netqty) !== 0)}
+            sx={{ 
+              py: 0.7,
+              px: 2,
+              textTransform: 'none',
+              minWidth: '100px',
+              backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
+              '&:hover': {
+                backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
+              },
             }}
           >
-            {groupChildren.map((child) => (
-              <BrokerCard
-                key={child._id}
-                name={child.name}
-                margin={0}
-                isTrading={child.status === 'active'}
-                stats={child.stats}
-                onToggleTrading={() => handleToggleTrading(child.accountId)}
-                onRefresh={() => handleRefresh(child.accountId)}
-                onDelete={() => handleDelete(child.accountId)}
-                onView={() => handleView(child.accountId)}
-                isToggling={togglingAccountId === child.accountId}
-              />
-            ))}
-          </Box>
+            Exit All
+          </Button>
+        )}
+        {tableState.activeTab === 'orders' && (
+          <Button
+            variant="contained"
+            color="error"
+            size="medium"
+            onClick={() => handleCancelAllOrders(group._id)}
+            disabled={!tableData.orders.some(order => !["complete", "cancelled", "rejected"].includes(order.status.toLowerCase()))}
+            sx={{ 
+              py: 0.7,
+              px: 2,
+              textTransform: 'none',
+              minWidth: '100px',
+              backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
+              '&:hover': {
+                backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
+              },
+            }}
+          >
+            Cancel All
+          </Button>
+        )}
+      </Box>
+
+
+            {/* Tabs */}
+            <Box
+              sx={{
+                display: 'flex',
+                backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#F8FAFC',
+                borderRadius: 1,
+                mb: 1,
+                overflow: 'hidden',
+                border: theme => theme.palette.mode === 'dark'
+                  ? '1px solid rgba(255, 255, 255, 0.1)'
+                  : '1px solid rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <Button
+                variant={tableState.activeTab === 'positions' ? 'contained' : 'text'}
+                onClick={() => handleTabChange('positions')}
+                sx={{
+                  flex: 1,
+                  py: 1.5,
+                  borderRadius: 0,
+                  backgroundColor: theme => {
+                    if (tableState.activeTab === 'positions') {
+                      return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                    }
+                    return 'transparent';
+                  },
+                  color: theme => {
+                    if (tableState.activeTab === 'positions') {
+                      return 'white';
+                    }
+                    return theme.palette.mode === 'dark' ? 'grey.500' : '#64748B';
+                  },
+                  '&:hover': {
+                    backgroundColor: theme => {
+                      if (tableState.activeTab === 'positions') {
+                        return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                      }
+                      return theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                    },
+                  },
+                }}
+              >
+                Positions
+              </Button>
+              <Button
+                variant={tableState.activeTab === 'orders' ? 'contained' : 'text'}
+                onClick={() => handleTabChange('orders')}
+                sx={{
+                  flex: 1,
+                  py: 1.5,
+                  borderRadius: 0,
+                  backgroundColor: theme => {
+                    if (tableState.activeTab === 'orders') {
+                      return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                    }
+                    return 'transparent';
+                  },
+                  color: theme => {
+                    if (tableState.activeTab === 'orders') {
+                      return 'white';
+                    }
+                    return theme.palette.mode === 'dark' ? 'grey.500' : '#64748B';
+                  },
+                  '&:hover': {
+                    backgroundColor: theme => {
+                      if (tableState.activeTab === 'orders') {
+                        return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                      }
+                      return theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                    },
+                  },
+                }}
+              >
+                Orders
+              </Button>
+              <Button
+                variant={tableState.activeTab === 'trades' ? 'contained' : 'text'}
+                onClick={() => handleTabChange('trades')}
+                sx={{
+                  flex: 1,
+                  py: 1.5,
+                  borderRadius: 0,
+                  backgroundColor: theme => {
+                    if (tableState.activeTab === 'trades') {
+                      return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                    }
+                    return 'transparent';
+                  },
+                  color: theme => {
+                    if (tableState.activeTab === 'trades') {
+                      return 'white';
+                    }
+                    return theme.palette.mode === 'dark' ? 'grey.500' : '#64748B';
+                  },
+                  '&:hover': {
+                    backgroundColor: theme => {
+                      if (tableState.activeTab === 'trades') {
+                        return theme.palette.mode === 'dark' ? '#000' : '#3b82f6';
+                      }
+                      return theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                    },
+                  },
+                }}
+              >
+                Trades
+              </Button>
+            </Box>
+
+            {/* Table */}
+            <TableContainer 
+              component={Paper} 
+              sx={{ 
+                backgroundColor: theme => theme.palette.mode === 'dark' 
+                  ? 'rgba(26, 28, 30, 0.5)'
+                  : 'rgba(255, 255, 255, 0.9)',
+                maxHeight: '600px',
+                position: 'relative',
+                overflow: 'auto',
+                margin: '16px 0',
+                borderRadius: '8px',
+                '& .MuiTableRow-root:hover': {
+                  backgroundColor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.05) !important'
+                    : 'rgba(0, 0, 0, 0.04) !important'
+                },
+                border: theme => theme.palette.mode === 'dark'
+                  ? '1px solid rgba(255, 255, 255, 0.1)'
+                  : '1px solid rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <Table size="medium" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    {(tableState.activeTab === 'positions' || tableState.activeTab === 'orders') && (
+                    <TableCell 
+                      sx={{ 
+                          color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                          padding: '12px 8px',
+                          backgroundColor: theme => theme.palette.mode === 'dark' 
+                            ? 'rgba(26, 28, 30, 0.95)'
+                            : 'rgba(255, 255, 255, 0.95)',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1,
+                          borderBottom: theme => theme.palette.mode === 'dark'
+                            ? '1px solid rgba(255, 255, 255, 0.1)'
+                            : '1px solid rgba(0, 0, 0, 0.1)',
+                          fontSize: '0.875rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        Actions
+                    </TableCell>
+                    )}
+                        <TableCell 
+                          sx={{ 
+                        color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                        padding: '12px 8px',
+                        backgroundColor: theme => theme.palette.mode === 'dark' 
+                          ? 'rgba(26, 28, 30, 0.95)'
+                          : 'rgba(255, 255, 255, 0.95)',
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 1,
+                        borderBottom: theme => theme.palette.mode === 'dark'
+                          ? '1px solid rgba(255, 255, 255, 0.1)'
+                          : '1px solid rgba(0, 0, 0, 0.1)',
+                        fontSize: '0.875rem',
+                        fontWeight: 700
+                      }}
+                    >
+                      Client ID
+                        </TableCell>
+                    {tableState.activeTab === 'positions' && (
+                      <>
+                        <SortableTableCell label="Symbol" field="tradingsymbol" />
+                        <SortableTableCell label="Product" field="producttype" />
+                        <SortableTableCell label="Action" field="action" />
+                        <SortableTableCell label="Net Qty" field="netqty" />
+                        <SortableTableCell label="Total Traded" field="totaltraded" />
+                        <SortableTableCell label="P&L" field="pnl" />
+                        <SortableTableCell label="LTP" field="ltp" />
+                        <SortableTableCell label="Avg Price" field="avgnetprice" />
+                      </>
+                    )}
+                    {tableState.activeTab === 'orders' && (
+                      <>
+                        <SortableTableCell label="Symbol" field="tradingsymbol" />
+                        <SortableTableCell label="Type" field="transactiontype" />
+                        <SortableTableCell label="Status" field="status" />
+                        <SortableTableCell label="Quantity" field="quantity" />
+                        <SortableTableCell label="Price" field="price" />
+                        <SortableTableCell label="Time" field="exchtime" />
+                      </>
+                    )}
+                    {tableState.activeTab === 'trades' && (
+                      <>
+                        <SortableTableCell label="Symbol" field="tradingsymbol" />
+                        <SortableTableCell label="Type" field="transactiontype" />
+                        <SortableTableCell label="Quantity" field="fillsize" />
+                        <SortableTableCell label="Price" field="fillprice" />
+                        <SortableTableCell label="Order ID" field="orderid" />
+                        <SortableTableCell label="Time" field="filltime" />
+                      </>
+                    )}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {getTableData().map((row: any, index: number) => (
+                    <TableRow 
+                      key={index} 
+                      hover
+                          sx={{ 
+                        '&:nth-of-type(odd)': {
+                          backgroundColor: theme => theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.02)'
+                            : 'rgba(0, 0, 0, 0.02)'
+                        },
+                        '&:last-child td': {
+                          borderBottom: 0
+                        }
+                      }}
+                    >
+                      {(tableState.activeTab === 'positions' || tableState.activeTab === 'orders') && (
+                        <TableCell sx={{ padding: '8px 12px' }}>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            {tableState.activeTab === 'positions' && (
+                              <Button
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                disabled={Number(row.netqty) === 0}
+                                onClick={() => handleSquareOff(row)}
+                          sx={{ 
+                                  minWidth: '60px',
+                                  padding: '2px 8px',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                Exit
+                              </Button>
+                            )}
+                            {tableState.activeTab === 'orders' && (
+                              <Button
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                onClick={() => handleCancelOrder(row.orderid)}
+                                disabled={["complete", "cancelled", "rejected"].includes(row.status.toLowerCase())}
+                          sx={{ 
+                                  minWidth: '60px',
+                                  padding: '2px 8px',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </Box>
+                        </TableCell>
+                      )}
+                        <TableCell 
+                          sx={{ 
+                          color: theme => theme.palette.mode === 'dark' 
+                            ? 'rgba(255, 255, 255, 0.9)'
+                            : 'rgba(0, 0, 0, 0.9)',
+                          padding: '8px 12px',
+                          borderBottom: theme => theme.palette.mode === 'dark'
+                            ? '1px solid rgba(255, 255, 255, 0.05)'
+                            : '1px solid rgba(0, 0, 0, 0.05)'
+                        }}
+                      >
+                        {row.clientId || '-'}
+                        </TableCell>
+                      {tableState.activeTab === 'positions' && (
+                        <>
+                          <TableCell sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                            padding: '8px' 
+                          }}>
+                            {row.tradingsymbol}
+                          </TableCell>
+                          <TableCell sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                            padding: '8px' 
+                          }}>
+                            {row.producttype}
+                          </TableCell>
+                          <TableCell sx={{ padding: '8px' }}>
+                            <Box
+                              sx={{
+                                color: Number(row.netqty) === 0
+                                  ? '#fc424a'
+                                  : Number(row.netqty) > 0
+                                  ? '#00d25b'
+                                  : '#fc424a',
+                                backgroundColor: Number(row.netqty) === 0
+                                  ? 'rgba(252, 66, 74, 0.2)'
+                                  : Number(row.netqty) > 0
+                                  ? 'rgba(0, 210, 91, 0.2)'
+                                  : 'rgba(252, 66, 74, 0.2)',
+                                display: 'inline-block',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                textShadow: theme => theme.palette.mode === 'dark'
+                                  ? Number(row.netqty) === 0
+                                  ? '0 0 10px rgba(252, 66, 74, 0.5)'
+                                  : Number(row.netqty) > 0
+                                  ? '0 0 10px rgba(0, 210, 91, 0.5)'
+                                    : '0 0 10px rgba(252, 66, 74, 0.5)'
+                                  : 'none',
+                                fontWeight: 500,
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              {Number(row.netqty) === 0 ? 'CLOSED' : Number(row.netqty) > 0 ? 'BUY' : 'SELL'}
+                            </Box>
+                          </TableCell>
+                          <TableCell sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                            padding: '8px' 
+                          }}>
+                            {Math.abs(Number(row.netqty) || 0)}
+                            {Number(row.cfbuyqty) > 0 && (
+                              <Typography
+                                component="span"
+                                sx={{
+                                  fontSize: '0.7rem',
+                                  color: theme => theme.palette.mode === 'dark' ? '#9CA3AF' : '#64748B',
+                                  ml: 1
+                                }}
+                              >
+                                (CF: {row.cfbuyqty})
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ color: Number(row.pnl) >= 0 ? '#22C55E' : '#EF4444', padding: '8px' }}>
+                            {Number(row.pnl).toFixed(2)} {Number(row.pnl) < 0 ? '↓' : '↑'}
+                            {Number(row.unrealisedpnl || 0) !== 0 && (
+                              <Typography
+                                component="span"
+                                sx={{
+                                  fontSize: '0.7rem',
+                                  color: Number(row.unrealisedpnl) >= 0 ? '#22C55E' : '#EF4444',
+                                  ml: 1
+                                }}
+                              >
+                                (Unr: {Number(row.unrealisedpnl).toFixed(2)})
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{Number(row.ltp).toFixed(2)}</TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>
+                            {Number(row.avgnetprice).toFixed(2)}
+                          </TableCell>
+                        </>
+                      )}
+                      {tableState.activeTab === 'orders' && (
+                        <>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.tradingsymbol}</TableCell>
+                          <TableCell sx={{ padding: '8px' }}>
+                            <Box
+                              sx={{ 
+                                color: row.transactiontype?.toLowerCase() === 'buy' ? '#00d25b' : '#fc424a',
+                                backgroundColor: row.transactiontype?.toLowerCase() === 'buy' 
+                                  ? 'rgba(0, 210, 91, 0.2)'
+                                  : 'rgba(252, 66, 74, 0.2)',
+                                display: 'inline-block',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                textShadow: row.transactiontype?.toLowerCase() === 'buy'
+                                  ? '0 0 10px rgba(0, 210, 91, 0.5)'
+                                  : '0 0 10px rgba(252, 66, 74, 0.5)',
+                                fontWeight: 500,
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              {row.transactiontype?.toUpperCase()}
+                            </Box>
+                          </TableCell>
+                          <TableCell sx={{ padding: '8px' }}>
+                            <Box
+                              sx={{ 
+                                color: row.status?.toLowerCase() === 'complete' ? '#00d25b' 
+                                  : row.status?.toLowerCase() === 'cancelled' ? '#fc424a'
+                                  : row.status?.toLowerCase() === 'rejected' ? '#fc424a'
+                                  : row.status?.toLowerCase() === 'pending' ? '#fcd34d'
+                                  : '#00d25b',
+                                backgroundColor: row.status?.toLowerCase() === 'complete' ? 'rgba(0, 210, 91, 0.2)'
+                                  : row.status?.toLowerCase() === 'cancelled' ? 'rgba(252, 66, 74, 0.2)'
+                                  : row.status?.toLowerCase() === 'rejected' ? 'rgba(252, 66, 74, 0.2)'
+                                  : row.status?.toLowerCase() === 'pending' ? 'rgba(252, 211, 77, 0.2)'
+                                  : 'rgba(0, 210, 91, 0.2)',
+                                display: 'inline-block',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                textShadow: row.status?.toLowerCase() === 'complete' ? '0 0 10px rgba(0, 210, 91, 0.5)'
+                                  : row.status?.toLowerCase() === 'cancelled' ? '0 0 10px rgba(252, 66, 74, 0.5)'
+                                  : row.status?.toLowerCase() === 'rejected' ? '0 0 10px rgba(252, 66, 74, 0.5)'
+                                  : row.status?.toLowerCase() === 'pending' ? '0 0 10px rgba(252, 211, 77, 0.5)'
+                                  : '0 0 10px rgba(0, 210, 91, 0.5)',
+                                fontWeight: 500,
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              {row.status?.toUpperCase()}
+                            </Box>
+                          </TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.quantity}</TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.price}</TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.exchtime}</TableCell>
+                        </>
+                      )}
+                      {tableState.activeTab === 'trades' && (
+                        <>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.tradingsymbol}</TableCell>
+                          <TableCell sx={{ padding: '8px' }}>
+                            <Box
+                              sx={{
+                                color: row.transactiontype?.toLowerCase() === 'buy' ? '#00d25b' : '#fc424a',
+                                backgroundColor: row.transactiontype?.toLowerCase() === 'buy' 
+                                  ? 'rgba(0, 210, 91, 0.2)'
+                                  : 'rgba(252, 66, 74, 0.2)',
+                                display: 'inline-block',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                textShadow: row.transactiontype?.toLowerCase() === 'buy'
+                                  ? '0 0 10px rgba(0, 210, 91, 0.5)'
+                                  : '0 0 10px rgba(252, 66, 74, 0.5)',
+                                fontWeight: 500,
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              {row.transactiontype?.toUpperCase()}
+                            </Box>
+                          </TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.fillsize}</TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.fillprice}</TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.orderid}</TableCell>
+                          <TableCell sx={{ color: 'white', padding: '8px' }}>{row.filltime}</TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  ))}
+                  {getTableData().length === 0 && (
+                    <TableRow>
+                      <TableCell 
+                        colSpan={tableState.activeTab === 'trades' ? 6 : 9} 
+                        align="center" 
+                        sx={{ 
+                          color: theme => theme.palette.mode === 'dark' 
+                            ? 'rgba(255, 255, 255, 0.7)'
+                            : 'rgba(0, 0, 0, 0.7)',
+                          padding: '24px 8px'
+                        }}
+                      >
+                        {tableState.searchQuery ? 'No matching records found' : 'No records found'}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
         ) : (
           <Box sx={{ 
             display: 'flex', 
@@ -401,6 +1171,20 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
     </Box>
   );
 };
+
+// Add new interfaces for table data
+interface TableData {
+  positions: any[];
+  orders: any[];
+  trades: any[];
+}
+
+interface TableState {
+  activeTab: 'positions' | 'orders' | 'trades';
+  searchQuery: string;
+  orderBy: string;
+  order: 'asc' | 'desc';
+}
 
 const GroupManager = () => {
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
@@ -426,51 +1210,37 @@ const GroupManager = () => {
   
   const snackbar = useSnackbar();
 
-  // Function to fetch broker accounts
-  const fetchBrokerAccounts = async () => {
+  // Function to fetch broker accounts and groups
+  const fetchData = async () => {
     try {
       setIsLoading(true);
-      const response = await getDematAccounts();
+      const [dematResponse, groupsResponse] = await Promise.all([
+        getDematAccounts(),
+        getGroups()
+      ]);
       
-      if (response.status) {
-        // Transform the demat accounts into the format expected by CreateGroup
-        const transformedAccounts = response.dematAccounts.map((account: any) => ({
+      if (dematResponse.status) {
+        const transformedAccounts = dematResponse.dematAccounts.map((account: any) => ({
           id: account._id,
           name: `${account.fullName}-angelone-${account.clientId}`,
         }));
-        
         setBrokerAccounts(transformedAccounts);
-      } else {
-        snackbar.error(response.message || 'Failed to fetch demat accounts');
+      }
+
+      if (groupsResponse.status) {
+        setGroups(groupsResponse.groups);
       }
     } catch (error: any) {
-      snackbar.error('Error fetching broker accounts: ' + error.message);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to fetch groups
-  const fetchGroups = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getGroups();
-      
-      if (response.status) {
-        setGroups(response.groups);
-      } else {
-        snackbar.error(response.message || 'Failed to fetch groups');
-      }
-    } catch (error: any) {
-      snackbar.error('Error fetching groups: ' + error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
+  // Initial data fetch
   useEffect(() => {
-    fetchBrokerAccounts();
-    fetchGroups();
+    fetchData();
   }, []);
 
   const handleOpenCreateGroup = () => {
@@ -491,7 +1261,7 @@ const GroupManager = () => {
       
       if (response.status) {
         snackbar.success('Group created successfully');
-        fetchGroups(); // Refresh the groups list
+        fetchData(); // Refresh the groups list
         handleCloseCreateGroup();
       } else {
         snackbar.error(response.message || 'Failed to create group');
@@ -517,7 +1287,7 @@ const GroupManager = () => {
       
       if (response.status) {
         snackbar.success('Group deleted successfully');
-        fetchGroups(); // Refresh the groups list
+        fetchData(); // Refresh the groups list
       } else {
         snackbar.error(response.message || 'Failed to delete group');
       }
@@ -602,7 +1372,7 @@ const GroupManager = () => {
             ? 'Master account connected successfully' 
             : 'Master account disconnected successfully'
         );
-        fetchGroups(); // Refresh the groups list
+        fetchData(); // Refresh the groups list
       } else {
         snackbar.error(response.message || 'Failed to update master account');
       }
@@ -628,7 +1398,7 @@ const GroupManager = () => {
       
       if (response.status) {
         snackbar.success(`Trading ${!group.isTradeEnabled ? 'enabled' : 'disabled'} successfully`);
-        fetchGroups(); // Refresh the groups list
+        fetchData(); // Refresh the groups list
       } else {
         snackbar.error(response.message || 'Failed to update trading status');
       }
@@ -656,6 +1426,8 @@ const GroupManager = () => {
             isTogglingTrading={isTogglingTrading === selectedGroup.id}
             masterAccountName={brokerAccounts.find(acc => acc.id === selectedGroup.masterAccountId)?.name}
             setRefreshFunction={fn => setSelectedGroupForRefresh(() => fn)}
+            brokerAccounts={brokerAccounts}
+            setBrokerAccounts={setBrokerAccounts}
           />
         ) : (
           <>
@@ -707,22 +1479,33 @@ const GroupManager = () => {
                       <Card
                         key={group._id}
                         sx={{
-                          backgroundColor: '#1A1C1E',
+                          backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#FFFFFF',
                           borderRadius: 1,
                           p: 2,
+                          boxShadow: theme => theme.palette.mode === 'dark'
+                            ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+                            : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                          border: theme => theme.palette.mode === 'dark'
+                            ? '1px solid rgba(255, 255, 255, 0.1)'
+                            : '1px solid rgba(0, 0, 0, 0.1)',
                         }}
                       >
                         {/* Group Name and View Button */}
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <Typography variant="h6" sx={{ color: 'white', flex: 1 }}>
+                          <Typography variant="h6" sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                            flex: 1 
+                          }}>
                             {group.name}
                           </Typography>
                           <Box sx={{ display: 'flex', gap: 1 }}>
                             <IconButton
                               size="small"
                               sx={{ 
-                                backgroundColor: '#3B82F6',
-                                '&:hover': { backgroundColor: '#2563EB' }
+                                backgroundColor: theme => theme.palette.mode === 'dark' ? '#3B82F6' : '#2563EB',
+                                '&:hover': { 
+                                  backgroundColor: theme => theme.palette.mode === 'dark' ? '#2563EB' : '#1D4ED8'
+                                }
                               }}
                               onClick={() => handleViewGroup(group._id)}
                             >
@@ -731,8 +1514,10 @@ const GroupManager = () => {
                             <IconButton
                               size="small"
                               sx={{ 
-                                backgroundColor: '#EF4444',
-                                '&:hover': { backgroundColor: '#DC2626' }
+                                backgroundColor: theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626',
+                                '&:hover': { 
+                                  backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#B91C1C'
+                                }
                               }}
                               onClick={() => handleDeleteGroup(group._id)}
                             >
@@ -743,7 +1528,10 @@ const GroupManager = () => {
 
                         {/* Master Account Selection */}
                         <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" sx={{ color: '#6B7280', mb: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? '#6B7280' : '#64748B',
+                            mb: 1 
+                          }}>
                             Master Account
                           </Typography>
                           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -752,8 +1540,8 @@ const GroupManager = () => {
                               <Typography
                                 sx={{
                                   flex: 1,
-                                  color: 'white',
-                                  backgroundColor: '#2D2D2D',
+                                  color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                                  backgroundColor: theme => theme.palette.mode === 'dark' ? '#2D2D2D' : '#F1F5F9',
                                   padding: '8.5px 14px',
                                   borderRadius: 1,
                                   fontSize: '0.9375rem',
@@ -769,10 +1557,17 @@ const GroupManager = () => {
                                   onChange={(e) => handleMasterChange(group._id, e.target.value)}
                                   displayEmpty
                                   sx={{
-                                    backgroundColor: '#2D2D2D',
-                                    color: 'white',
+                                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#2D2D2D' : '#F1F5F9',
+                                    color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
                                     '& .MuiOutlinedInput-notchedOutline': {
-                                      borderColor: 'rgba(255, 255, 255, 0.23)',
+                                      borderColor: theme => theme.palette.mode === 'dark'
+                                        ? 'rgba(255, 255, 255, 0.23)'
+                                        : 'rgba(0, 0, 0, 0.23)',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: theme => theme.palette.mode === 'dark'
+                                        ? 'rgba(255, 255, 255, 0.4)'
+                                        : 'rgba(0, 0, 0, 0.4)',
                                     },
                                   }}
                                 >
@@ -790,12 +1585,20 @@ const GroupManager = () => {
                               onClick={() => handleToggleMaster(group._id)}
                               disabled={isTogglingMaster === group._id || (!group.masterAccountId && !group.selectedAccountId)}
                               sx={{ 
-                                backgroundColor: group.masterAccountId ? '#EF4444' : (group.selectedAccountId ? '#22C55E' : '#2D2D2D'),
+                                backgroundColor: group.masterAccountId 
+                                  ? theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626'
+                                  : group.selectedAccountId 
+                                    ? theme => theme.palette.mode === 'dark' ? '#22C55E' : '#16A34A'
+                                    : theme => theme.palette.mode === 'dark' ? '#2D2D2D' : '#E2E8F0',
                                 '&:hover': { 
-                                  backgroundColor: group.masterAccountId ? '#DC2626' : (group.selectedAccountId ? '#16A34A' : '#1F2937')
+                                  backgroundColor: group.masterAccountId 
+                                    ? theme => theme.palette.mode === 'dark' ? '#DC2626' : '#B91C1C'
+                                    : group.selectedAccountId 
+                                      ? theme => theme.palette.mode === 'dark' ? '#16A34A' : '#15803D'
+                                      : theme => theme.palette.mode === 'dark' ? '#1F2937' : '#CBD5E1'
                                 },
                                 '&.Mui-disabled': {
-                                  backgroundColor: '#2D2D2D',
+                                  backgroundColor: theme => theme.palette.mode === 'dark' ? '#2D2D2D' : '#E2E8F0',
                                 }
                               }}
                             >
@@ -812,28 +1615,54 @@ const GroupManager = () => {
 
                         {/* Trading Toggle */}
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                          <Typography variant="body2" sx={{ color: '#6B7280', mr: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? '#6B7280' : '#64748B',
+                            mr: 1 
+                          }}>
                             Trading
                           </Typography>
                           <Switch
                             checked={group.isTradeEnabled}
                             onChange={() => handleToggleTrading(group._id)}
                             disabled={isTogglingTrading === group._id}
+                            sx={{
+                              '& .MuiSwitch-track': {
+                                backgroundColor: theme => theme.palette.mode === 'dark' 
+                                  ? 'rgba(255, 255, 255, 0.1)' 
+                                  : 'rgba(0, 0, 0, 0.1)'
+                              },
+                              '& .Mui-checked + .MuiSwitch-track': {
+                                backgroundColor: theme => theme.palette.mode === 'dark' 
+                                  ? '#22C55E !important' 
+                                  : '#16A34A !important'
+                              },
+                              '.MuiSwitch-thumb': {
+                                '& .Mui-checked': {
+                                  backgroundColor: theme => theme.palette.mode === 'dark' 
+                                  ? '#4ADE80 !important' 
+                                  : '#22C55E !important'
+                                },
+                                backgroundColor: !group.isTradeEnabled ? '#DC2626 !important' : '#22C55E !important'
+                                
+                              }
+                            }}
                           />
                         </Box>
 
                         {/* Stats Display */}
                         <Box sx={{ mb: 2 }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2" sx={{ color: '#6B7280' }}>
+                            <Typography variant="body2" sx={{ 
+                              color: theme => theme.palette.mode === 'dark' ? '#6B7280' : '#64748B'
+                            }}>
                               Orders {group.stats?.orders || 0}
                             </Typography>
-                            <Typography variant="body2" sx={{ color: '#6B7280' }}>
+                            <Typography variant="body2" sx={{ 
+                              color: theme => theme.palette.mode === 'dark' ? '#6B7280' : '#64748B'
+                            }}>
                               Qty {group.stats?.qty || 0}
                             </Typography>
-                            <Typography variant="body2" sx={{ color: '#6B7280' }}>
-                              Child {group.stats?.child || 0}/{group.stats?.totalChild || 2}
-                            </Typography>
+                            
                           </Box>
                         </Box>
 
@@ -841,37 +1670,59 @@ const GroupManager = () => {
                         <Box sx={{ 
                           display: 'flex', 
                           justifyContent: 'space-between',
-                          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderTop: theme => theme.palette.mode === 'dark'
+                            ? '1px solid rgba(255, 255, 255, 0.1)'
+                            : '1px solid rgba(0, 0, 0, 0.1)',
                           pt: 2
                         }}>
                           <Tooltip title="Pending">
                             <Box sx={{ textAlign: 'center' }}>
-                              <Typography variant="body2" sx={{ color: '#FCD34D' }}>P</Typography>
-                              <Typography variant="body2" sx={{ color: '#FCD34D' }}>{group.stats?.pending || 0}</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#FCD34D' : '#D97706'
+                              }}>P</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#FCD34D' : '#D97706'
+                              }}>{group.stats?.pending || 0}</Typography>
                             </Box>
                           </Tooltip>
                           <Tooltip title="Completed">
                             <Box sx={{ textAlign: 'center' }}>
-                              <Typography variant="body2" sx={{ color: '#34D399' }}>C</Typography>
-                              <Typography variant="body2" sx={{ color: '#34D399' }}>{group.stats?.completed || 0}</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#34D399' : '#059669'
+                              }}>C</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#34D399' : '#059669'
+                              }}>{group.stats?.completed || 0}</Typography>
                             </Box>
                           </Tooltip>
                           <Tooltip title="Rejected">
                             <Box sx={{ textAlign: 'center' }}>
-                              <Typography variant="body2" sx={{ color: '#EF4444' }}>R</Typography>
-                              <Typography variant="body2" sx={{ color: '#EF4444' }}>{group.stats?.rejected || 0}</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626'
+                              }}>R</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626'
+                              }}>{group.stats?.rejected || 0}</Typography>
                             </Box>
                           </Tooltip>
                           <Tooltip title="Cancelled">
                             <Box sx={{ textAlign: 'center' }}>
-                              <Typography variant="body2" sx={{ color: '#EF4444' }}>C</Typography>
-                              <Typography variant="body2" sx={{ color: '#EF4444' }}>{group.stats?.cancelled || 0}</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626'
+                              }}>C</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626'
+                              }}>{group.stats?.cancelled || 0}</Typography>
                             </Box>
                           </Tooltip>
                           <Tooltip title="Failed">
                             <Box sx={{ textAlign: 'center' }}>
-                              <Typography variant="body2" sx={{ color: '#EF4444' }}>F</Typography>
-                              <Typography variant="body2" sx={{ color: '#EF4444' }}>{group.stats?.failed || 0}</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626'
+                              }}>F</Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626'
+                              }}>{group.stats?.failed || 0}</Typography>
                             </Box>
                           </Tooltip>
                         </Box>

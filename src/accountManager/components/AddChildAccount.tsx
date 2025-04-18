@@ -60,101 +60,145 @@ const AddChildAccount: React.FC<AddChildAccountProps> = ({
       maxWidth="sm"
       fullWidth
       PaperProps={{
-        style: {
-          backgroundColor: '#1E1E1E',
-          color: '#FFFFFF',
+        sx: {
+          backgroundColor: theme => theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
+          color: theme => theme.palette.mode === 'dark' ? '#FFFFFF' : '#1E293B',
         },
       }}
     >
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="h6">Add Child Account</Typography>
-          <IconButton onClick={onClose} size="small" sx={{ color: 'white' }}>
+          <Typography variant="h6" sx={{ 
+            color: theme => theme.palette.mode === 'dark' ? '#FFFFFF' : '#1E293B'
+          }}>
+            Add Child Account
+          </Typography>
+          <IconButton 
+            onClick={onClose} 
+            size="small" 
+            sx={{ 
+              color: theme => theme.palette.mode === 'dark' ? 'white' : '#64748B'
+            }}
+          >
             <CloseIcon />
           </IconButton>
         </Box>
       </DialogTitle>
-      <form onSubmit={handleSubmit}>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel id="select-child-label" sx={{ color: 'grey.500' }}>
-                Select Child
-              </InputLabel>
-              <Select
-                labelId="select-child-label"
-                value={selectedAccount}
-                onChange={(e) => setSelectedAccount(e.target.value)}
-                required
-                sx={{
-                  color: 'white',
-                  backgroundColor: '#2D2D2D',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255, 255, 255, 0.23)',
-                  },
-                }}
-              >
-                {availableAccounts.map((account) => (
-                  <MenuItem key={account.id} value={account.id}>
-                    {account.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            
-            <TextField
-              label="Multiplier"
-              type="number"
-              value={multiplier}
-              onChange={(e) => setMultiplier(e.target.value)}
-              fullWidth
+      
+      <DialogContent>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel id="select-child-label" sx={{ 
+              color: theme => theme.palette.mode === 'dark' ? 'grey.500' : '#64748B'
+            }}>
+              Select Child
+            </InputLabel>
+            <Select
+              labelId="select-child-label"
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
               required
-              inputProps={{ min: "0.1", step: "0.1" }}
               sx={{
-                input: { color: 'white' },
-                label: { color: 'grey.500' },
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#2D2D2D',
-                  '& fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.23)',
-                  },
+                color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                backgroundColor: theme => theme.palette.mode === 'dark' ? '#2D2D2D' : '#F8FAFC',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.23)'
+                    : 'rgba(0, 0, 0, 0.23)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.4)'
+                    : 'rgba(0, 0, 0, 0.4)',
+                },
+                '& .MuiSelect-icon': {
+                  color: theme => theme.palette.mode === 'dark' ? 'white' : '#64748B',
                 },
               }}
-            />
-
-            <Button
-              variant="contained"
-              color={fixLot ? "primary" : "inherit"}
-              onClick={() => setFixLot(!fixLot)}
-              sx={{
-                backgroundColor: fixLot ? undefined : '#2D2D2D',
-                color: 'white',
-              }}
             >
-              Fix Lot
-            </Button>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ padding: 3 }}>
-          <Button 
-            onClick={onClose}
+              {availableAccounts.map((account) => (
+                <MenuItem key={account.id} value={account.id}>
+                  {account.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <TextField
+            label="Multiplier"
+            type="number"
+            value={multiplier}
+            onChange={(e) => setMultiplier(e.target.value)}
+            fullWidth
+            required
+            inputProps={{ min: "0.1", step: "0.1" }}
+            sx={{
+              input: { 
+                color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B'
+              },
+              label: { 
+                color: theme => theme.palette.mode === 'dark' ? 'grey.500' : '#64748B'
+              },
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: theme => theme.palette.mode === 'dark' ? '#2D2D2D' : '#F8FAFC',
+                '& fieldset': {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.23)'
+                    : 'rgba(0, 0, 0, 0.23)',
+                },
+                '&:hover fieldset': {
+                  borderColor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.4)'
+                    : 'rgba(0, 0, 0, 0.4)',
+                },
+              },
+            }}
+          />
+
+          <Button
             variant="contained"
-            color="error"
-            sx={{ textTransform: 'none' }}
+            color={fixLot ? "primary" : "inherit"}
+            onClick={() => setFixLot(!fixLot)}
+            sx={{
+              backgroundColor: theme => {
+                if (fixLot) return undefined;
+                return theme.palette.mode === 'dark' ? '#2D2D2D' : '#F1F5F9';
+              },
+              color: theme => {
+                if (fixLot) return 'white';
+                return theme.palette.mode === 'dark' ? 'white' : '#1E293B';
+              },
+              '&:hover': {
+                backgroundColor: theme => {
+                  if (fixLot) return undefined;
+                  return theme.palette.mode === 'dark' ? '#374151' : '#E2E8F0';
+                },
+              },
+            }}
           >
-            Cancel
+            Fix Lot
           </Button>
-          <Button 
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={!selectedAccount}
-            sx={{ textTransform: 'none' }}
-          >
-            Add
-          </Button>
-        </DialogActions>
-      </form>
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ padding: 3 }}>
+        <Button 
+          onClick={onClose}
+          variant="contained"
+          color="error"
+          sx={{ textTransform: 'none' }}
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={!selectedAccount}
+          sx={{ textTransform: 'none' }}
+        >
+          Add
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 };

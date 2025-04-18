@@ -48,7 +48,7 @@ const BasketTrading = lazy(() => import("./nfo/pages/basketTrading"));
 const BankNiftyOrders = lazy(() => import("./bankNifty/pages/BankNiftyOrders"));
 const LoginUsersManagement = lazy(() => import("./users/pages/loginUserManagement"));
 const AccountManager = lazy(() => import("./accountManager/pages/accountManager"));
-const GroupManager = lazy(() => import("./accountManager/pages/groupManager"));
+const GroupManager = lazy(() => import("./accountManager/pages/groupManager").then(module => ({ default: module.default || module })));
 const BrokerDetails = lazy(() => import("./accountManager/pages/accountDetails"));
 
 const AppRoutes = () => {

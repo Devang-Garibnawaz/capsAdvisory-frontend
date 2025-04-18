@@ -8,10 +8,11 @@ const GET_DEMAT_ACCOUNTS = 'users/getDematAccounts';
 const UPDATE_DEMAT_ACCOUNT_TRADE_TOGGLE = 'users/updateDematAccountTradeToggle';
 const DELETE_DEMAT_ACCOUNT = 'users/deleteDematAccount';
 const AUTO_LOGIN_USERS = 'users/autoLoginUsers';
-const CANCEL_ALL_ORDERS_Group = 'groups/cancelAllOrders';
-const CANCEL_ALL_ORDERS_User = 'users/cancelAllOrders';
+const CANCEL_ALL_ORDERS_Group = 'groups/cancelAllOrdersByGroup';
+const CANCEL_ALL_ORDERS_USER = 'users/cancelAllOrders';
 const CANCEL_ORDER_BY_ORDER_ID = 'users/cancelOrder';
 const SQUARE_OFF_BY_ID = 'users/squareOff';
+const SQUARE_OFF_BY_USER = 'users/squareOffByUser';
 
 export async function getAvailableBrokersList() {
     try {
@@ -119,13 +120,30 @@ export const autoLoginUsers = async () => {
   }
 };
 
-export const cancelAllOrders = async (groupId ='', dematAccountId = ''): Promise<any> => {
+export const cancelAllOrdersByGroup = async (groupId ='', orderids: string[] = []): Promise<any> => {
   try {
-    const url = groupId 
-      ? `${BASE_URL}${CANCEL_ALL_ORDERS_Group}/${groupId}`
-      : `${BASE_URL}${CANCEL_ALL_ORDERS_User}/${dematAccountId}`;
+    const url = `${BASE_URL}${CANCEL_ALL_ORDERS_Group}/${groupId}`;
 
     const response = await fetch(url, {
+      method: 'POST',
+      headers: getRequiredHeaders(),
+      body: JSON.stringify({orderids})
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error cancelling orders:', error);
+    return {
+      status: false,
+      message: 'Failed to cancel orders',
+    };
+  }
+};
+
+export const cancelAllOrdersByUser = async (accountId: string): Promise<any> => {
+  try {
+    const response = await fetch(`${BASE_URL}${CANCEL_ALL_ORDERS_USER}/${accountId}`, {
       method: 'POST',
       headers: getRequiredHeaders(),
     });
@@ -159,9 +177,9 @@ export const cancelOrderByOrderId = async (orderId: string) => {
   }
 };
 
-export const squareOffById = async (positionId: string, position: any) => {
+export const squareOffByUser = async (position: any) => {
   try {
-    const response = await fetch(`${BASE_URL}${SQUARE_OFF_BY_ID}/${positionId}`, {
+    const response = await fetch(`${BASE_URL}${SQUARE_OFF_BY_USER}`, {
       method: 'POST',
       headers: getRequiredHeaders(),
       body: JSON.stringify(position)

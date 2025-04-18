@@ -72,6 +72,16 @@ export interface GroupChild {
     pnl: number;
     margin: number;
     pos: number;
+    position?: any;
+    orders?: {
+      orders?: any;
+      total?: number;
+      cancelled?: number;
+      complete?: number;
+      pending?: number;
+      rejected?: number;
+    };
+    trades?: any;
   };
 }
 
