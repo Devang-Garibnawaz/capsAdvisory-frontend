@@ -179,9 +179,8 @@ const AccountManager = () => {
     }
   };
 
-  const handleRefresh = (accountId: string) => {
-    // TODO: Implement refresh logic
-    console.log('Refresh account:', accountId);
+  const handleRefresh = () => {
+    fetchBrokerAccounts();
   };
 
   const handleDelete = async (accountId: string) => {
@@ -264,7 +263,7 @@ const AccountManager = () => {
                   isTrading={account.isTrading}
                   stats={account.stats}
                   onToggleTrading={() => handleToggleTrading(account.id)}
-                  onRefresh={() => handleRefresh(account.id)}
+                  onRefresh={() => handleRefresh()}
                   onDelete={() => handleDelete(account.id)}
                   onView={() => handleView(account.id)}
                   isToggling={togglingAccountId === account.id}
