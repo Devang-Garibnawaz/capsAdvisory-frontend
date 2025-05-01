@@ -330,7 +330,8 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
     if (activeTab === 'positions') {
       data = data.map(row => ({
         ...row,
-        netqty: Number(row.netqty) || 0
+        netqty: Number(row.netqty) || 0,
+        avgnetprice: parseFloat(row.avgnetprice) || 0
       }));
     }
 
@@ -905,7 +906,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                           fontWeight: 700
                         }}
                       >
-                        Actions
+                        {tableState.activeTab === 'positions'?'Exit':tableState.activeTab === 'orders'?'Cancel':''}
                     </TableCell>
                     )}
                         <TableCell 
@@ -933,7 +934,6 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                         <SortableTableCell label="Product" field="producttype" />
                         <SortableTableCell label="Action" field="action" />
                         <SortableTableCell label="Net Qty" field="netqty" />
-                        <SortableTableCell label="Total Traded" field="totaltraded" />
                         <SortableTableCell label="P&L" field="pnl" />
                         <SortableTableCell label="LTP" field="ltp" />
                         <SortableTableCell label="Avg Price" field="avgnetprice" />
@@ -1108,7 +1108,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                           </TableCell>
                           <TableCell sx={{ color: 'white', padding: '8px' }}>{Number(row.ltp).toFixed(2)}</TableCell>
                           <TableCell sx={{ color: 'white', padding: '8px' }}>
-                            {Number(row.avgnetprice).toFixed(2)}
+                            {row.avgnetprice.toFixed(2)}
                           </TableCell>
                         </>
                       )}
