@@ -668,93 +668,6 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
               ))}
             </Box>
 
-            {/* Search and Actions */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'flex-start',
-              mb: 2,
-              gap: 2
-            }}>
-              <TextField
-                placeholder="Search..."
-                value={tableState.searchQuery}
-                onChange={handleSearch}
-                size="small"
-                sx={{ 
-                  backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#F8FAFC',
-                  borderRadius: 1,
-                  minWidth: '240px',
-                  '& .MuiOutlinedInput-root': {
-                    color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
-                    '& fieldset': {
-                      borderColor: theme => theme.palette.mode === 'dark'
-                        ? 'rgba(255, 255, 255, 0.23)'
-                        : 'rgba(0, 0, 0, 0.23)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: theme => theme.palette.mode === 'dark'
-                        ? 'rgba(255, 255, 255, 0.5)'
-                        : 'rgba(0, 0, 0, 0.5)',
-                    },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ 
-                        color: theme => theme.palette.mode === 'dark' ? 'white' : '#64748B'
-                      }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              {tableState.activeTab === 'positions' && (
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="medium"
-                  onClick={() => handleSquareOffAll(group._id)}
-                  disabled={!tableData.positions.some(pos => Number(pos.netqty) !== 0)}
-                  sx={{ 
-                    py: 0.7,
-                    px: 2,
-                    textTransform: 'none',
-                    minWidth: '100px',
-                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
-                    '&:hover': {
-                      backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
-                    },
-                  }}
-                >
-                  Exit All
-                </Button>
-              )}
-              {tableState.activeTab === 'orders' && (
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="medium"
-                  onClick={() => handleCancelAllOrders(group._id)}
-                  disabled={!tableData.orders.some(order => !["complete", "cancelled", "rejected"].includes(order.status.toLowerCase()))}
-                  sx={{ 
-                    py: 0.7,
-                    px: 2,
-                    textTransform: 'none',
-                    minWidth: '100px',
-                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
-                    '&:hover': {
-                      backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
-                    },
-                  }}
-                >
-                  Cancel All
-                </Button>
-              )}
-            </Box>
-
-
             {/* Tabs */}
             <Box
               sx={{
@@ -762,6 +675,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                 backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#F8FAFC',
                 borderRadius: 1,
                 mb: 1,
+                mt: 1,
                 overflow: 'hidden',
                 border: theme => theme.palette.mode === 'dark'
                   ? '1px solid rgba(255, 255, 255, 0.1)'
@@ -861,6 +775,92 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
               >
                 Trades
               </Button>
+            </Box>
+
+            {/* Search and Actions */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'flex-start',
+              mb: 1,
+              gap: 2
+            }}>
+              <TextField
+                placeholder="Search..."
+                value={tableState.searchQuery}
+                onChange={handleSearch}
+                size="small"
+                sx={{ 
+                  backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#F8FAFC',
+                  borderRadius: 1,
+                  minWidth: '240px',
+                  '& .MuiOutlinedInput-root': {
+                    color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B',
+                    '& fieldset': {
+                      borderColor: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.23)'
+                        : 'rgba(0, 0, 0, 0.23)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: theme => theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.5)'
+                        : 'rgba(0, 0, 0, 0.5)',
+                    },
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ 
+                        color: theme => theme.palette.mode === 'dark' ? 'white' : '#64748B'
+                      }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              {tableState.activeTab === 'positions' && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="medium"
+                  onClick={() => handleSquareOffAll(group._id)}
+                  disabled={!tableData.positions.some(pos => Number(pos.netqty) !== 0)}
+                  sx={{ 
+                    py: 0.7,
+                    px: 2,
+                    textTransform: 'none',
+                    minWidth: '100px',
+                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
+                    '&:hover': {
+                      backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
+                    },
+                  }}
+                >
+                  Exit All
+                </Button>
+              )}
+              {tableState.activeTab === 'orders' && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="medium"
+                  onClick={() => handleCancelAllOrders(group._id)}
+                  disabled={!tableData.orders.some(order => !["complete", "cancelled", "rejected"].includes(order.status.toLowerCase()))}
+                  sx={{ 
+                    py: 0.7,
+                    px: 2,
+                    textTransform: 'none',
+                    minWidth: '100px',
+                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#EF4444',
+                    '&:hover': {
+                      backgroundColor: theme => theme.palette.mode === 'dark' ? '#B91C1C' : '#DC2626',
+                    },
+                  }}
+                >
+                  Cancel All
+                </Button>
+              )}
             </Box>
 
             {/* Table */}
