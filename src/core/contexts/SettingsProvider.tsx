@@ -58,6 +58,7 @@ const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const changeMode = (mode: string) => {
     if (mode) {
       setMode(mode);
+      localStorage.setItem("mode", mode);
     }
   };
 

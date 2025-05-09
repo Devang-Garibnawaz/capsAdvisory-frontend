@@ -104,7 +104,11 @@ const LoginUsersManagement = () => {
 
   const fetchRecords = async () => {
     const loginUsersData = await FetchLoginUsersDataService(dpDate!);
-    setLoginUsersData(loginUsersData);
+    if(loginUsersData){
+      setLoginUsersData(loginUsersData);
+    }else{
+      snackbar.error("Something went wrong");
+    }
   };
 
   const autoLoginUsers = async () => {

@@ -1,4 +1,5 @@
 import { getBaseUrl } from "../../http/globalUrl";
+import { getRequiredHeaders } from "../../services/userService";
 
 const BASE_URL = getBaseUrl();
 const GET_LOGIN_USERS_LIST ='users/getLoginUsers';
@@ -10,7 +11,9 @@ export async function FetchLoginUsersDataService(date:Date){
 
     try {
         let strDate = date.getFullYear()+'-'+(date.getMonth() + 1) +'-'+date.getDate();
-        const response = await fetch(`${BASE_URL}${GET_LOGIN_USERS_LIST}?date=${strDate}`);
+        const response = await fetch(`${BASE_URL}${GET_LOGIN_USERS_LIST}?date=${strDate}`,{
+            headers: getRequiredHeaders()
+        });
         const json = await response.json();
         return json.usersData;
     } catch (error) {
