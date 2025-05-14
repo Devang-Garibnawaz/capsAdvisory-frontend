@@ -1,7 +1,7 @@
 import Alert, { Color } from "@material-ui/core/Alert";
 import AlertTitle from "@material-ui/core/AlertTitle";
 import Snackbar from "@material-ui/core/Snackbar";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
 interface SnackbarContextInterface {
@@ -15,6 +15,8 @@ type SnackbarProviderProps = {
   children: React.ReactNode;
 };
 
+const AUTO_HIDE_DURATION = 3000; // 3 seconds
+
 const SnackbarProvider = ({ children }: SnackbarProviderProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -22,30 +24,29 @@ const SnackbarProvider = ({ children }: SnackbarProviderProps) => {
   const [title, setTitle] = useState("");
   const [severity, setSeverity] = useState<Color | undefined>(undefined);
 
-  const handleClose = (
+  const handleClose = useCallback((
     event: React.SyntheticEvent | React.MouseEvent,
     reason?: string
   ) => {
     if (reason === "clickaway") {
       return;
     }
-
     setOpen(false);
-  };
+  }, []);
 
-  const error = (newMessage: string) => {
+  const error = useCallback((newMessage: string) => {
     setTitle(t("common.snackbar.error"));
     setMessage(newMessage);
     setSeverity("error");
     setOpen(true);
-  };
+  }, [t]);
 
-  const success = (newMessage: string) => {
+  const success = useCallback((newMessage: string) => {
     setTitle(t("common.snackbar.success"));
     setMessage(newMessage);
     setSeverity("success");
     setOpen(true);
-  };
+  }, [t]);
 
   return (
     <SnackbarContext.Provider value={{ error, success }}>
@@ -57,8 +58,9 @@ const SnackbarProvider = ({ children }: SnackbarProviderProps) => {
           horizontal: "right",
         }}
         open={open}
-        autoHideDuration={6000}
+        autoHideDuration={AUTO_HIDE_DURATION}
         onClose={handleClose}
+        TransitionProps={{ onExited: () => setMessage("") }}
       >
         <Alert onClose={handleClose} severity={severity}>
           <AlertTitle>{title}</AlertTitle>

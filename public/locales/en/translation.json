@@ -22,7 +22,8 @@
         "GroupManager": "Group Manager",
         "JobsManagement":"Jobs List",
         "moneyfluxStocksManagement":"MF Stocks List",
-        "pnl":"Profit And Loss"
+        "pnl":"Profit And Loss",
+        "CandleOperations":"Candle Operations"
       }
     },
     "header": {
