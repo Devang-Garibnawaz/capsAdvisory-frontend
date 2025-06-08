@@ -13,6 +13,7 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface StatBoxProps {
   label: string;
@@ -64,7 +65,9 @@ interface BrokerCardProps {
   onRefresh: () => void;
   onDelete: () => void;
   onView: () => void;
+  onUpdateQuantity?: () => void;
   isToggling?: boolean;
+  isActionButtonVisible?: boolean;
 }
 
 const BrokerCard: React.FC<BrokerCardProps> = ({
@@ -76,7 +79,9 @@ const BrokerCard: React.FC<BrokerCardProps> = ({
   onRefresh,
   onDelete,
   onView,
+  onUpdateQuantity,
   isToggling = false,
+  isActionButtonVisible = true
 }) => {
   const theme = useTheme();
   
@@ -141,7 +146,17 @@ const BrokerCard: React.FC<BrokerCardProps> = ({
           />
         )}
         <Box sx={{ flex: 1 }} />
-        <Stack direction="row" spacing={1}>
+        {isActionButtonVisible ? <Stack direction="row" spacing={1}>
+          <IconButton
+            size="small"
+            sx={{ 
+              backgroundColor: '#706d6d',
+              '&:hover': { backgroundColor: '#3e3e3e' }
+            }}
+            onClick={onUpdateQuantity}
+          >
+            <EditIcon fontSize="small" sx={{ color: 'white' }} />
+          </IconButton>
           <IconButton
             size="small"
             sx={{ 
@@ -172,7 +187,9 @@ const BrokerCard: React.FC<BrokerCardProps> = ({
           >
             <VisibilityIcon fontSize="small" sx={{ color: 'white' }} />
           </IconButton>
-        </Stack>
+        </Stack> : <Typography variant='h5' sx={{ color: '#0EA5E9',
+              fontWeight: 600 
+            }}> Master Account</Typography>}
       </Box>
 
       <Grid container spacing={2}>

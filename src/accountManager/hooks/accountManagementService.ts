@@ -13,6 +13,8 @@ const CANCEL_ALL_ORDERS_USER = 'users/cancelAllOrders';
 const CANCEL_ORDER_BY_ORDER_ID = 'users/cancelOrder';
 const SQUARE_OFF_BY_ID = 'users/squareOff';
 const SQUARE_OFF_BY_USER = 'users/squareOffByUser';
+const UPDATE_QTY = 'users/updateQuantity';
+const GET_SCRIPT_TYPEs = 'candles/getStrikePrice';
 
 export async function getAvailableBrokersList() {
     try {
@@ -192,6 +194,44 @@ export const squareOffByUser = async (position: any) => {
     return {
       status: false,
       message: 'Failed to square off position',
+    };
+  }
+};
+
+export const updateQuantity = async (account:any) =>{
+  try {
+    const response = await fetch(`${BASE_URL}${UPDATE_QTY}`, {
+      method: 'POST',
+      headers: getRequiredHeaders(),
+      body: JSON.stringify(account)
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating quantity:', error);
+    return {
+      status: false,
+      message: 'Failed to update quantity',
+    };
+  }
+}
+
+export const getScriptData = async (index: string) =>{
+ try {
+    const response = await fetch(`${BASE_URL}${GET_SCRIPT_TYPEs}`, {
+      method: 'POST',
+      headers: getRequiredHeaders(),
+      body: JSON.stringify({index})
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating quantity:', error);
+    return {
+      status: false,
+      message: 'Failed to update quantity',
     };
   }
 };

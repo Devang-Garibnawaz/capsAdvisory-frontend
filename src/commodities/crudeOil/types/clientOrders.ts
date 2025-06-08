@@ -1,5 +1,5 @@
 export interface ClientOrders {
-    _id: string;
+    id: string;
     clientId: string,
     orderData:any,
     orderType:string;

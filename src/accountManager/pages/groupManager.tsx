@@ -46,6 +46,7 @@ import { getDematAccounts, updateDematAccountTradeToggle, cancelOrderByOrderId, 
 import { BrokerAccount, GroupStats } from '../types';
 import AddChildAccount from '../components/AddChildAccount';
 import BrokerCard from '../components/BrokerCard';
+import CreateOrder from "../components/CreateOrder";
 
 // Extended interface for local use
 interface ExtendedGroup extends Group {
@@ -79,9 +80,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
   brokerAccounts,
   setBrokerAccounts,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('');
-  const [placeRejected, setPlaceRejected] = useState(false);
+  const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
   const [groupChildren, setGroupChildren] = useState<GroupChild[]>([]);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [togglingAccountId, setTogglingAccountId] = useState<string | null>(null);
@@ -104,13 +103,13 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
   const fetchGroupChildren = async () => {
     try {
       setIsLoadingChildren(true);
-      const response = await getGroupChildren(group._id);
+      const response = await getGroupChildren(group.id);
       
       if (response.status) {
         const transformedAccounts = response.dematAccounts.map((account: any) => ({
-          _id: account._id,
+          id: account.id,
           name: `${account.fullName}-angelone-${account.clientId}`,
-          accountId: account._id,
+          accountId: account.id,
           status: account.isTradeEnable ? 'active' : 'inactive',
           multiplier: account.multiplier || 1,
           fixLot: account.fixLot || false,
@@ -128,7 +127,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
   // Fetch group children when group changes
   useEffect(() => {
     fetchGroupChildren();
-  }, [group._id]);
+  }, [group.id]);
 
   // Update table data when group children change
   useEffect(() => {
@@ -158,7 +157,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
       ws.current.close();
     }
     
-    ws.current = new WebSocket(`ws://localhost:8080/ws/demat?token=${token}&group=${group._id}`) as WebSocket;
+    ws.current = new WebSocket(`ws://localhost:8080/ws/demat?token=${token}&group=${group.id}`) as WebSocket;
 
     if (ws.current) {
       (ws.current as WebSocket).onopen = () => console.log('Connected');
@@ -166,9 +165,9 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
         const data = JSON.parse(event.data);
         if (data.type === 'demat_accounts') {
           const transformedAccounts = data?.data?.dematAccounts.map((account: any) => ({
-            _id: account._id,
+            id: account.id,
             name: `${account.fullName}-angelone-${account.clientId}`,
-            accountId: account._id,
+            accountId: account.id,
             status: account.isTradeEnable ? 'active' : 'inactive',
             multiplier: account.multiplier || 1,
             fixLot: account.fixLot || false,
@@ -223,7 +222,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
 
   const handleDelete = async (accountId: string) => {
     try {
-      const response = await removeChildFromGroup(group._id, accountId);
+      const response = await removeChildFromGroup(group.id, accountId);
       
       if (response.status) {
         // Update the local state to remove the child
@@ -435,6 +434,14 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
     }
   };
 
+  const handleOpenCreateOrder = () =>{
+    setIsCreateOrderOpen(true);
+  }
+
+  const handleCloseCreateOrder = () =>{
+    setIsCreateOrderOpen(false);
+  }
+
   return (
     <Box>
       {/* Header */}
@@ -484,6 +491,21 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
           >
             + Add Child
           </Button>
+
+          <Button
+            variant="contained"
+            color="success"
+            size="small"
+            onClick={handleOpenCreateOrder}
+            sx={{ 
+              py: 0.5,
+              px: 1.5,
+              textTransform: 'none',
+              fontSize: '0.875rem'
+            }}
+          >
+            Place Order
+          </Button>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -495,22 +517,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                 <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#0EA5E9' }}>Master Account:</span> {masterAccountName}
               </Typography>
             )}
-          <Button
-            variant="contained"
-            color="error"
-            onClick={onToggleMaster}
-            disabled={isTogglingMaster}
-              size="small"
-            sx={{ 
-                py: 0.5,
-                px: 1.5,
-                textTransform: 'none',
-                fontSize: '0.875rem'
-              }}
-              startIcon={isTogglingMaster ? <CircularProgress size={16} /> : undefined}
-          >
-            Disconnect Master
-          </Button>
+          
           </Box>
           <Typography variant="body2" sx={{ 
             color: theme => theme.palette.mode === 'dark' ? 'grey.500' : 'text.secondary'
@@ -537,19 +544,6 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
           }}>
             PNL: {tableData.positions.reduce((sum, pos) => sum + (Number(pos.pnl) || 0), 0).toFixed(2)}
           </Typography>
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            sx={{ 
-              py: 0.5,
-              px: 1.5,
-              textTransform: 'none',
-              fontSize: '0.875rem'
-            }}
-          >
-            Place Order
-          </Button>
           <IconButton 
             onClick={fetchGroupChildren}
             size="small"
@@ -654,7 +648,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
             >
               {groupChildren.map((child) => (
                 <BrokerCard
-                  key={child._id}
+                  key={child.id}
                   name={child.name}
                   margin={0}
                   isTrading={child.status === 'active'}
@@ -664,6 +658,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                   onDelete={() => handleDelete(child.accountId)}
                   onView={() => handleView(child.accountId)}
                   isToggling={togglingAccountId === child.accountId}
+                  isActionButtonVisible={child.accountId !== group.masterAccountId}
                 />
               ))}
             </Box>
@@ -824,7 +819,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                   variant="contained"
                   color="error"
                   size="medium"
-                  onClick={() => handleSquareOffAll(group._id)}
+                  onClick={() => handleSquareOffAll(group.id)}
                   disabled={!tableData.positions.some(pos => Number(pos.netqty) !== 0)}
                   sx={{ 
                     py: 0.7,
@@ -845,7 +840,7 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
                   variant="contained"
                   color="error"
                   size="medium"
-                  onClick={() => handleCancelAllOrders(group._id)}
+                  onClick={() => handleCancelAllOrders(group.id)}
                   disabled={!tableData.orders.some(order => !["complete", "cancelled", "rejected"].includes(order.status.toLowerCase()))}
                   sx={{ 
                     py: 0.7,
@@ -1235,6 +1230,9 @@ const GroupDetailsView: React.FC<GroupDetailsViewProps> = ({
           </Box>
         )}
       </Box>
+
+       <CreateOrder group={group} open={isCreateOrderOpen} onClose={handleCloseCreateOrder} />
+
     </Box>
   );
 };
@@ -1288,7 +1286,7 @@ const GroupManager = () => {
       
       if (dematResponse.status) {
         const transformedAccounts = dematResponse.dematAccounts.map((account: any) => ({
-          id: account._id,
+          id: account.id,
           name: `${account.fullName}-angelone-${account.clientId}`,
         }));
         setBrokerAccounts(transformedAccounts);
@@ -1373,7 +1371,7 @@ const GroupManager = () => {
   };
 
   const handleViewGroup = (groupId: string) => {
-    const group = groups.find(g => g._id === groupId);
+    const group = groups.find(g => g.id === groupId);
     if (group) {
       setSelectedGroup({
         id: groupId,
@@ -1391,7 +1389,7 @@ const GroupManager = () => {
 
   const handleMasterChange = (groupId: string, accountId: string) => {
     // Just update the selected account without showing confirmation
-    const group = groups.find(g => g._id === groupId);
+    const group = groups.find(g => g.id === groupId);
     if (group) {
       group.selectedAccountId = accountId; // Temporarily store selected account
       setGroups([...groups]); // Force update
@@ -1399,7 +1397,7 @@ const GroupManager = () => {
   };
 
   const handleToggleMaster = async (groupId: string) => {
-    const group = groups.find(g => g._id === groupId);
+    const group = groups.find(g => g.id === groupId);
     if (!group) return;
 
     const accountId = group.selectedAccountId || group.masterAccountId;
@@ -1455,7 +1453,7 @@ const GroupManager = () => {
   const handleToggleTrading = async (groupId: string) => {
     try {
       setIsTogglingTrading(groupId);
-      const group = groups.find(g => g._id === groupId);
+      const group = groups.find(g => g.id === groupId);
       if (!group) return;
 
       const response = await toggleTrading({ 
@@ -1484,7 +1482,7 @@ const GroupManager = () => {
       <Box sx={{ p: 3 }}>
         {isGroupDetailsView && selectedGroup ? (
           <GroupDetailsView
-            group={groups.find(g => g._id === selectedGroup.id)!}
+            group={groups.find(g => g.id === selectedGroup.id)!}
             onBack={handleBackToList}
             onAddChild={() => setIsAddChildOpen(true)}
             onToggleMaster={() => handleToggleMaster(selectedGroup.id)}
@@ -1530,7 +1528,7 @@ const GroupManager = () => {
               >
                 {groups.length > 0 ? (
                   groups.map((group) => {
-                    const stats = groupStats[group._id] || {
+                    const stats = groupStats[group.id] || {
                       orders: 0,
                       qty: 0,
                       child: 0,
@@ -1544,7 +1542,7 @@ const GroupManager = () => {
 
                     return (
                       <Card
-                        key={group._id}
+                        key={group.id}
                         sx={{
                           backgroundColor: theme => theme.palette.mode === 'dark' ? '#1A1C1E' : '#FFFFFF',
                           borderRadius: 1,
@@ -1574,7 +1572,7 @@ const GroupManager = () => {
                                   backgroundColor: theme => theme.palette.mode === 'dark' ? '#2563EB' : '#1D4ED8'
                                 }
                               }}
-                              onClick={() => handleViewGroup(group._id)}
+                              onClick={() => handleViewGroup(group.id)}
                             >
                               <VisibilityIcon fontSize="small" sx={{ color: 'white' }} />
                             </IconButton>
@@ -1586,7 +1584,7 @@ const GroupManager = () => {
                                   backgroundColor: theme => theme.palette.mode === 'dark' ? '#DC2626' : '#B91C1C'
                                 }
                               }}
-                              onClick={() => handleDeleteGroup(group._id)}
+                              onClick={() => handleDeleteGroup(group.id)}
                             >
                               <DeleteIcon fontSize="small" sx={{ color: 'white' }} />
                             </IconButton>
@@ -1621,7 +1619,7 @@ const GroupManager = () => {
                               <FormControl fullWidth size="small">
                                 <Select
                                   value={group.selectedAccountId || ''}
-                                  onChange={(e) => handleMasterChange(group._id, e.target.value)}
+                                  onChange={(e) => handleMasterChange(group.id, e.target.value)}
                                   displayEmpty
                                   sx={{
                                     backgroundColor: theme => theme.palette.mode === 'dark' ? '#2D2D2D' : '#F1F5F9',
@@ -1649,8 +1647,8 @@ const GroupManager = () => {
                             )}
                             <IconButton
                               size="small"
-                              onClick={() => handleToggleMaster(group._id)}
-                              disabled={isTogglingMaster === group._id || (!group.masterAccountId && !group.selectedAccountId)}
+                              onClick={() => handleToggleMaster(group.id)}
+                              disabled={isTogglingMaster === group.id || (!group.masterAccountId && !group.selectedAccountId)}
                               sx={{ 
                                 backgroundColor: group.masterAccountId 
                                   ? theme => theme.palette.mode === 'dark' ? '#EF4444' : '#DC2626'
@@ -1669,7 +1667,7 @@ const GroupManager = () => {
                                 }
                               }}
                             >
-                              {isTogglingMaster === group._id ? (
+                              {isTogglingMaster === group.id ? (
                                 <CircularProgress size={24} sx={{ color: 'white' }} />
                               ) : group.masterAccountId ? (
                                 <LinkIcon sx={{ color: 'white' }} />
@@ -1690,8 +1688,8 @@ const GroupManager = () => {
                           </Typography>
                           <Switch
                             checked={group.isTradeEnabled}
-                            onChange={() => handleToggleTrading(group._id)}
-                            disabled={isTogglingTrading === group._id}
+                            onChange={() => handleToggleTrading(group.id)}
+                            disabled={isTogglingTrading === group.id}
                             sx={{
                               '& .MuiSwitch-track': {
                                 backgroundColor: theme => theme.palette.mode === 'dark' 
@@ -1815,7 +1813,6 @@ const GroupManager = () => {
         onSubmit={handleCreateGroup}
         brokerAccounts={brokerAccounts}
       />
-
       <AddChildAccount
         open={isAddChildOpen}
         onClose={() => {

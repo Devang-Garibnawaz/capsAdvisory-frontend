@@ -120,7 +120,7 @@ const JobsListing = () => {
             stopJob(id);
           };
             if(params.row.state === 'active' || params.row.state === 'queued'){
-                return <Button onClick={() => onClick(params.row._id)}><StopCircleIcon/></Button>;
+                return <Button onClick={() => onClick(params.row.id)}><StopCircleIcon/></Button>;
             }else{
                 return '-'
             }
@@ -287,7 +287,7 @@ const JobsListing = () => {
                       page={page - 1}
                       onPageChange={handlePageChange}
                       onPageSizeChange={handlePageSizeChange}
-                      getRowId={(row: any) => row._id}
+                      getRowId={(row: any) => row.id}
                       rowsPerPageOptions={[5, 10, 20, 50, 100]}
                     />
                   )}

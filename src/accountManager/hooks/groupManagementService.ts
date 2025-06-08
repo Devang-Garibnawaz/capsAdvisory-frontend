@@ -12,8 +12,9 @@ const ADD_CHILD = 'groups/addChild';
 const REMOVE_CHILD = 'groups/removeChild';
 const GET_GROUP_CHILDREN = 'groups/getChildren';
 const SQUARE_OFF_ALL_BY_GROUP = 'groups/squareOffAll';
+const POST_PLACE_MANNUAL_ORDER = 'orders/placeMannualOrder';
 export interface Group {
-  _id: string;
+  id: string;
   name: string;
   members: string[];
   masterAccountId?: string;
@@ -61,7 +62,7 @@ export interface ChildAccount {
 }
 
 export interface GroupChild {
-  _id: string;
+  id: string;
   accountId: string;
   multiplier: number;
   fixLot: boolean;
@@ -269,5 +270,20 @@ export async function squareOffAllByGroup(groupId: string) {
   } catch (error) {
     console.log('Error square off all by group:', error);
     throw new Error('Failed to square off all by group');
+  }
+}
+
+export async function placeMannulOrder(orderDetails: any){
+  try {
+    const response = await fetch(`${BASE_URL}${POST_PLACE_MANNUAL_ORDER}`, {
+      method: 'POST',
+      headers: getRequiredHeaders(),
+      body: JSON.stringify(orderDetails)
+    });
+
+    const json = await response.json();
+    return json;
+  } catch (error) {
+    throw new Error('Failed to place mannual order: '+ error);
   }
 }

@@ -6,6 +6,7 @@ const GET_LOGIN_USERS_LIST ='users/getLoginUsers';
 const POST_TRADE_ON_OFF ='users/tradeToggle';
 const POST_CHANGE_USER_STATUS ='users/updateUserStatus';
 const POST_AUTO_LOGIN_USERS ='users/autoLoginAngel';
+const POST_DELETE_LOGIN_USER = 'users/deleteLoginUser';
 
 export async function FetchLoginUsersDataService(date:Date){
 
@@ -38,6 +39,20 @@ export async function tradeToggle(clientCode:string,status:boolean){
     }
 }
 
+export async function deleteLoginUser(id: string){
+    try {
+        const requestOptions = {
+            method: 'POST',
+            headers: getRequiredHeaders(),
+            body: JSON.stringify({id})
+        };
+        const response = await fetch(`${BASE_URL}${POST_DELETE_LOGIN_USER}`,requestOptions);
+        return await response.json();
+    } catch (error) {
+        console.log('Error trade toggle:', error);
+        throw new Error('Failed to toggle trade for user');
+    }
+}
 export async function updateUserStatus(clientCode:string,status:boolean){
 
     try {
