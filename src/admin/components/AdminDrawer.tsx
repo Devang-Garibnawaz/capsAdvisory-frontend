@@ -21,6 +21,7 @@ import { drawerCollapsedWidth, drawerWidth } from "../../core/config/layout";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
 import PeopleIcon from '@mui/icons-material/People';
 import GroupsIcon from '@mui/icons-material/Groups';
+import SsidChartIcon from '@mui/icons-material/SsidChart';
 
 type AdminDrawerProps = {
   collapsed: boolean;
@@ -79,6 +80,11 @@ const AdminDrawer = ({
           icon: Grading,
           key: "admin.drawer.menu.LoginUsersManagement",
           path: "/admin/login-users"
+        },
+        {
+          icon: SsidChartIcon,
+          key: "admin.drawer.menu.Strategies",
+          path: "/admin/strategies"
         },
         // {
         //   icon: WaterFallChartIcon,

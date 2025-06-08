@@ -13,7 +13,7 @@ const AdminToolbar = ({ children, title }: AdminToolbarProps) => {
   const { toggleDrawer } = useSettings();
 
   return (
-    <Toolbar sx={{ px: { xs: 3, sm: 6 } }}>
+    <Toolbar sx={{ px: { xs: 3, sm: 6}}}>
       <IconButton
         color="inherit"
         aria-label="open drawer"

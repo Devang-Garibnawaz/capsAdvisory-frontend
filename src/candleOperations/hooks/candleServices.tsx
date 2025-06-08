@@ -4,6 +4,21 @@ import { getRequiredHeaders } from '../../services/userService';
 const BASE_URL = getBaseUrl();
 const FETCH_SYMBOL_LIST = 'candles/fetchSymbolList';
 const GET_SYMBOL_DETAILS = 'candles/getSymbolDetails';
+const POST_OPTION_CONTRACTS = 'candles/fetchOptionContracts'
+
+export const fetchOptionContracts = async () =>{
+    try {
+        const response = await fetch(`${BASE_URL}${POST_OPTION_CONTRACTS}`, {
+        method: 'POST',
+        headers: getRequiredHeaders(),
+        body: JSON.stringify({index: 'NIFTY'})
+    });
+        const json = await response.json();
+        return json;
+    } catch (error) {
+        throw new Error('Failed to fetch symbol list');
+    }
+}
 
 export async function fetchSymbolList() {
     try {

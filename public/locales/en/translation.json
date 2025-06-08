@@ -23,7 +23,8 @@
         "JobsManagement":"Jobs List",
         "moneyfluxStocksManagement":"MF Stocks List",
         "pnl":"Profit And Loss",
-        "CandleOperations":"Candle Operations"
+        "CandleOperations":"Candle Operations",
+        "Strategies": "Strategies"
       }
     },
     "header": {
@@ -211,7 +212,9 @@
     "selected": "Selected",
     "snackbar": {
       "error": "Error",
-      "success": "Success"
+      "success": "Success",
+      "warning": "Warning",
+      "info": "Info"
     },
     "today": "Today",
     "update": "Update",

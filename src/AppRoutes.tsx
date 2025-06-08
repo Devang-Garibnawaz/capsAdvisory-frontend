@@ -49,6 +49,7 @@ const BankNiftyOrders = lazy(() => import("./bankNifty/pages/BankNiftyOrders"));
 const LoginUsersManagement = lazy(() => import("./users/pages/loginUserManagement"));
 const AccountManager = lazy(() => import("./accountManager/pages/accountManager"));
 const GroupManager = lazy(() => import("./accountManager/pages/groupManager").then(module => ({ default: module.default || module })));
+const Strategies = lazy(() => import("./AlgoTrading/pages/Strategies"));
 const BrokerDetails = lazy(() => import("./accountManager/pages/accountDetails"));
 
 const AppRoutes = () => {
@@ -83,6 +84,7 @@ const AppRoutes = () => {
         <PrivateRoute path="logs-management" element={<LogsManagement/>}/>
         <PrivateRoute path="orders" element={<BankNiftyOrders/>}/>
         <PrivateRoute path="jobs-management" element={<JobsListing/>}/>
+        <PrivateRoute path="strategies" element={<Strategies />} />
       </PrivateRoute>
       <Route path="/" element={<Login />} />
       <Route path="forgot-password" element={<ForgotPassword />} />

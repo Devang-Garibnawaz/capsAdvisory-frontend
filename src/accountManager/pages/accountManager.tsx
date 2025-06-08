@@ -3,15 +3,15 @@ import AdminAppBar from "../../admin/components/AdminAppBar";
 import AdminToolbar from "../../admin/components/AdminToolbar";
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
 import LoginIcon from '@mui/icons-material/Login';
-import { Box, Button, Grid, CircularProgress, Typography } from "@mui/material";
+import { Box, Button, Grid, CircularProgress, Typography, Dialog, IconButton, DialogTitle, DialogContent, TextField, DialogActions } from "@mui/material";
 import ConnectBroker from "../components/ConnectBroker";
 import BrokerCard from "../components/BrokerCard";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
-import { getDematAccounts, updateDematAccountTradeToggle, deleteDematAccount, autoLoginUsers } from "../hooks/accountManagementService";
+import { getDematAccounts, updateDematAccountTradeToggle, deleteDematAccount, autoLoginUsers, updateQuantity } from "../hooks/accountManagementService";
 import { useNavigate } from 'react-router-dom';
-
+import CloseIcon from '@mui/icons-material/Close';
 interface DematAccount {
-  _id: string;
+  id: string;
   referenceUserId: string;
   email: string;
   fullName: string;
@@ -24,6 +24,7 @@ interface DematAccount {
   isTradeEnable: boolean;
   createdAt: string;
   updatedAt: string;
+  quantityToTrade: number
   stats: {
     inGroup: number;
     pnl: number;
@@ -74,7 +75,9 @@ const AccountManager = () => {
   const [brokerAccounts, setBrokerAccounts] = useState<BrokerAccount[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [togglingAccountId, setTogglingAccountId] = useState<string | null>(null);
-  
+  const [openEditQty, setOpenEditQty] = useState<boolean>(false);
+  const [editAccountData, setEditAccountData] = useState<any>(null);
+  const [updatedQty, setUpdatedQty] = useState<Number>(0);
   const snackbar = useSnackbar();
   const navigate = useNavigate();
 
@@ -88,9 +91,10 @@ const AccountManager = () => {
       if (response.status) {
         // Transform the demat accounts into the format expected by BrokerCard
         const transformedAccounts = response.dematAccounts.map((account: DematAccount) => ({
-          id: account._id,
+          id: account.id,
           name: `${account.fullName}-${account.broker}-${account.clientId}`,
           isTrading: account.isTradeEnable,
+          quantityToTrade: account.quantityToTrade,
           stats: {
             inGroup: account.stats.inGroup || 0,
             pnl: account.stats.pnl || 0,
@@ -204,6 +208,33 @@ const AccountManager = () => {
     navigate(`/admin/account/${accountId}`);
   };
 
+  const handleUpdateQty = (account:any) =>{
+    setOpenEditQty(true);
+    setEditAccountData(account);
+    setUpdatedQty(account?.quantityToTrade || 1)
+  }
+
+  const handleSubmitQtyUpdate = async () =>{
+    const data = {
+      ...editAccountData,
+      quantityToTrade: updatedQty
+    }
+    const response = await updateQuantity(data);
+    if (response.status) {
+        snackbar.success('Quantity is updated!');
+        setOpenEditQty(false);
+        setBrokerAccounts((prev) =>
+          prev.map((x) =>
+            x.id === data.id
+              ? { ...x, quantityToTrade: data.quantityToTrade } // update quantity
+              : x
+          )
+        );
+    } else {
+        snackbar.error(response.message || 'Failed to update quantity');
+    }
+  }
+
   return (
     <React.Fragment>
       <AdminAppBar>
@@ -266,6 +297,7 @@ const AccountManager = () => {
                   onRefresh={() => handleRefresh()}
                   onDelete={() => handleDelete(account.id)}
                   onView={() => handleView(account.id)}
+                  onUpdateQuantity={() => handleUpdateQty(account)}
                   isToggling={togglingAccountId === account.id}
                 />
               ))
@@ -285,6 +317,93 @@ const AccountManager = () => {
         onClose={handleCloseConnectBroker}
         onSubmit={handleSubmitBrokerDetails}
       />
+
+        <Dialog open={openEditQty} 
+          onClose={() => setOpenEditQty(!openEditQty)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              backgroundColor: theme => theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
+              color: theme => theme.palette.mode === 'dark' ? '#FFFFFF' : '#1E293B',
+            },
+          }}
+        >
+          <DialogTitle>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Typography variant="h6" sx={{ 
+                color: theme => theme.palette.mode === 'dark' ? '#FFFFFF' : '#1E293B'
+              }}>
+                Edit Quantity
+              </Typography>
+              <IconButton 
+                onClick={() => setOpenEditQty(!openEditQty)} 
+                size="small" 
+                sx={{ 
+                  color: theme => theme.palette.mode === 'dark' ? 'white' : '#64748B'
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  label="Quantity"
+                  type="number"
+                  value={updatedQty || 1}
+                  onChange={(e) => setUpdatedQty(Number(e.target.value))}
+                  fullWidth
+                  required
+                  inputProps={{ min: "0", step: "1" }}
+                  sx={{
+                    mt:2,
+                    input: { 
+                      color: theme => theme.palette.mode === 'dark' ? 'white' : '#1E293B'
+                    },
+                    label: { 
+                      color: theme => theme.palette.mode === 'dark' ? 'grey.500' : '#64748B'
+                    },
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: theme => theme.palette.mode === 'dark' ? '#2D2D2D' : '#F8FAFC',
+                      '& fieldset': {
+                        borderColor: theme => theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.23)'
+                          : 'rgba(0, 0, 0, 0.23)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: theme => theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.4)'
+                          : 'rgba(0, 0, 0, 0.4)',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+          </DialogContent>
+          <DialogActions sx={{ padding: 3 }}>
+                  <Button 
+                    onClick={() => setOpenEditQty(!openEditQty)}
+                    variant="contained"
+                    color="error"
+                    type="button"
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Cancel
+                </Button>
+                <Button 
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    disabled={updatedQty === 0}
+                    onClick={handleSubmitQtyUpdate}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Update
+                </Button>
+          </DialogActions>
+        </Dialog>
     </React.Fragment>
   );
 };

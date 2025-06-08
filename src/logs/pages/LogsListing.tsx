@@ -218,7 +218,7 @@ const LogsListingManagement = () => {
                                 page={page - 1}
                                 onPageChange={handlePageChange}
                                 onPageSizeChange={handlePageSizeChange}
-                                getRowId={(row: any) =>  row._id}   
+                                getRowId={(row: any) =>  row.id}   
                                 rowsPerPageOptions={[5,10,20,50,100]}
                             />
                         }

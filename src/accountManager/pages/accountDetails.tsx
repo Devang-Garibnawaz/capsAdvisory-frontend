@@ -65,7 +65,7 @@ const AccountDetails = () => {
       const response = await getDematAccounts();
       if (response.status) {
         const account = response.dematAccounts.find(
-          (acc: any) => acc._id === accountId
+          (acc: any) => acc.id === accountId
         );
         if (account) {
           setAccountDetails(account);
@@ -447,7 +447,8 @@ const AccountDetails = () => {
                     },
                     '&:last-child td': {
                       borderBottom: 0
-                    }
+                    },
+                    wordBreak:'break-word'
                   }}
                 >
                   <TableCell
@@ -682,14 +683,14 @@ const AccountDetails = () => {
     <TableHead>
       <TableRow>
         {[
-          { id: 'tradingsymbol', label: 'Symbol', width: '8%' },
-          { id: 'producttype', label: 'Product', width: '11%' },
-          { id: 'transactiontype', label: 'B/S', width: '9%' },
-          { id: 'quantity', label: 'Quantity', width: '11%' },
-          { id: 'ordertype', label: 'Order Type', width: '11%' },
-          { id: 'price', label: 'Price', width: '9%' },
+          { id: 'tradingsymbol', label: 'Symbol', width: '12%' },
+          { id: 'producttype', label: 'Product', width: '8%' },
+          { id: 'transactiontype', label: 'B/S', width: '6%' },
+          { id: 'quantity', label: 'Quantity', width: '6%' },
+          { id: 'ordertype', label: 'Order Type', width: '6%' },
+          { id: 'price', label: 'Price', width: '6%' },
           { id: 'orderid', label: 'Order Id', width: '15%' },
-          { id: 'status', label: 'Status', width: '9%' },
+          { id: 'status', label: 'Status', width: '6%' },
           { id: 'exchtime', label: 'Create Time', width: '12%' },
           { id: 'actions', label: 'Actions', width: '5%' }
         ].map(column => (

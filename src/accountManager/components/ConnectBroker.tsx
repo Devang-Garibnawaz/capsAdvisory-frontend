@@ -46,6 +46,7 @@ interface BrokerDetails {
   nickname: string;
   mobileNo: string;
   email: string;
+  quantity: string;
   [key: string]: string; // Allow dynamic fields based on connection_info
 }
 
@@ -67,6 +68,7 @@ const ConnectBroker: React.FC<ConnectBrokerProps> = ({ open, onClose, onSubmit }
     nickname: '',
     mobileNo: '',
     email: '',
+    quantity: '',
   });
 
   const fetchBrokersList = async () => {
@@ -109,6 +111,7 @@ const ConnectBroker: React.FC<ConnectBrokerProps> = ({ open, onClose, onSubmit }
       nickname: '',
       mobileNo: '',
       email: '',
+      quantity: ''
     };
     
     // Initialize fields based on connection_info
@@ -271,6 +274,26 @@ const ConnectBroker: React.FC<ConnectBrokerProps> = ({ open, onClose, onSubmit }
               onChange={handleInputChange('email')}
               fullWidth
               required
+              sx={{
+                input: { color: 'white' },
+                label: { color: 'grey.500' },
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#2D2D2D',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.23)',
+                  },
+                },
+              }}
+            />
+
+            <TextField
+              label="Quantity."
+              value={formData.quantity === '' ? 0 : formData.quantity}
+              onChange={handleInputChange('quantity')}
+              fullWidth
+              required
+              type="number"
+              inputProps={{ min: "0", step: "1" }}
               sx={{
                 input: { color: 'white' },
                 label: { color: 'grey.500' },

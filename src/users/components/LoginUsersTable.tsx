@@ -54,14 +54,14 @@ const LoginUsersTable = ({
           rows={loginUsersData}
           disableColumnSelector={true}
           columns={columns}
-          isRowSelectable={(row:any)=>row._id}
+          isRowSelectable={(row:any)=>row.id}
           components={{
             Toolbar: CustomToolbar,
           }}
           density="compact"
           pageSize={pageSize}
           onPageSizeChange={(newPageSize) => setPageSize(newPageSize)} 
-          getRowId={(row: any) =>  row._id}
+          getRowId={(row: any) =>  row.id}
           rowsPerPageOptions={[5,10,20,100]}
         />
       </Box>

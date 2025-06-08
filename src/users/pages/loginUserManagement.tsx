@@ -17,6 +17,7 @@ import LoginUsersTable from "../components/LoginUsersTable";
 import { GridColDef } from "@mui/x-data-grid";
 import {
   autoLoginAngel,
+  deleteLoginUser,
   FetchLoginUsersDataService,
   tradeToggle,
   updateUserStatus,
@@ -93,6 +94,26 @@ const LoginUsersManagement = () => {
           ampm;
         return strTime;
       },
+    },
+    {
+      field: "Action",
+      headerName: "Action",
+      width: 250,
+      renderCell: (params) =>  
+      <Button
+        sx={{
+          padding: "1px 6px",
+          borderRadius: "5px",
+          backgroundColor: "#e33838",
+          color: "#ffff",
+          borderColor: "ffff",
+        }}
+        variant="outlined"
+        onClick={() => handleDeleteLoginUser(params.row)}
+      >
+        Delete
+      </Button>
+        
     },
   ];
 
@@ -171,11 +192,24 @@ const LoginUsersManagement = () => {
       } else {
         snackbar.error(result?.message);
       }
-      console.log(result);
     } catch (error: any) {
       snackbar.error("Something went wrong: " + error?.message);
     }
   };
+
+  const handleDeleteLoginUser = async (rowData: any) =>{
+    try {
+      const result = await deleteLoginUser(rowData.id);
+      if (result?.status) {
+        snackbar.success("Record deleted!");
+        fetchRecords();
+      } else {
+        snackbar.error(result?.message);
+      }
+    } catch (error:any) {
+      snackbar.error("Something went wrong: " + error?.message);
+    }
+  }
 
   const handleUserStatus = async (rowData: any) => {
     try {

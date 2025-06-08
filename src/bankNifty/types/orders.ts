@@ -1,5 +1,5 @@
 export interface Orders {
-    _id: string;
+    id: string;
     orderType:string;
     symbol?: string;
     entryPrice: number;

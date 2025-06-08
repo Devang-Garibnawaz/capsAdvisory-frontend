@@ -1,66 +1,74 @@
 import { PaletteMode } from "@material-ui/core";
+import { colors } from "./colors";
 
-const palette = {
-  grey: {
-    "50": "#ECEFF1",
-    "100": "#CFD8DC",
-    "200": "#B0BEC5",
-    "300": "#90A4AE",
-    "400": "#78909C",
-    "500": "#607D8B",
-    "600": "#546E7A",
-    "700": "#455A64",
-    "800": "#37474F",
-    "900": "#263238",
-  },
-};
+export interface Palette {
+  contrastThreshold: number;
+  mode: PaletteMode;
+  error: typeof colors.error;
+  info: {
+    main: string;
+  };
+  primary: {
+    main: string;
+    contrastText: string;
+  };
+  secondary: {
+    main: string;
+  };
+  success: typeof colors.success;
+  warning: typeof colors.warning;
+  text: {
+    primary: string;
+    secondary: string;
+    disabled: string;
+  };
+  divider: string;
+  background: {
+    paper: string;
+    default: string;
+  };
+  action: {
+    selectedOpacity: number;
+    selected: string;
+  };
+}
 
-export const darkPalette = {
-  ...palette,
+export const createDarkPalette = (): Palette => ({
   contrastThreshold: 4.5,
-  mode: "dark" as PaletteMode,
-  error: {
-    main: "#FF8A65",
-  },
+  mode: "dark",
+  error: colors.error,
   info: {
     main: "#4FC3F7",
   },
   primary: {
     main: "#64B5F6",
-    contrastText: palette.grey[900],
+    contrastText: colors.grey[900],
   },
   secondary: {
-    main: palette.grey[900],
+    main: colors.grey[900],
   },
-  success: {
-    main: "#81C784",
-  },
-  warning: {
-    main: "#FFD54F",
+  success: colors.success,
+  warning: colors.warning,
+  background: {
+    paper: colors.background.dark.paper,
+    default: colors.background.dark.default,
   },
   text: {
-    primary: palette.grey[100],
-    secondary: palette.grey[300],
-    disabled: palette.grey[600],
+    primary: colors.text.dark.primary,
+    secondary: colors.text.dark.secondary,
+    disabled: colors.text.dark.disabled,
   },
-  divider: palette.grey[700],
-  background: {
-    paper: palette.grey[900],
-    default: palette.grey[800],
-  },
+  divider: colors.grey[700],
   action: {
     selectedOpacity: 0,
-    selected: palette.grey[800],
+    selected: colors.grey[800],
   },
-};
+});
 
-export const lightPalette = {
-  ...palette,
+export const createLightPalette = (): Palette => ({
   contrastThreshold: 3,
-  mode: "light" as PaletteMode,
-  error: {
-    main: "#FF3D00",
-  },
+  mode: "light",
+  error: colors.error,
   info: {
     main: "#00B0FF",
   },
@@ -71,24 +79,23 @@ export const lightPalette = {
   secondary: {
     main: "#FFF",
   },
-  success: {
-    main: "#00E676",
-  },
-  warning: {
-    main: "#FFC400",
-  },
+  success: colors.success,
+  warning: colors.warning,
   text: {
-    primary: palette.grey[700],
-    secondary: palette.grey[500],
-    disabled: palette.grey[300],
+    primary: colors.text.light.primary,
+    secondary: colors.text.light.secondary,
+    disabled: colors.text.light.disabled,
   },
-  divider: palette.grey[100],
+  divider: colors.grey[100],
   background: {
-    paper: "#FFF",
-    default: palette.grey[50],
+    paper: colors.background.light.paper,
+    default: colors.background.light.default,
   },
   action: {
     selectedOpacity: 0,
-    selected: palette.grey[50],
+    selected: colors.grey[50],
   },
-};
+});
+
+export const darkPalette: Palette = createDarkPalette();
+export const lightPalette: Palette = createLightPalette();
