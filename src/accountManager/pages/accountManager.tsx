@@ -244,25 +244,33 @@ const AccountManager = () => {
       <Box sx={{ p: 3 }}>
         <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
           <Button 
-            component="label" 
-            role={undefined} 
+            component="label"  
             variant="contained" 
             tabIndex={-1} 
             startIcon={<PersonAddAltIcon />}
             onClick={handleOpenConnectBroker}
             disabled={isLoading}
+            sx={{
+                py: 0.5,
+                px: 1.5,
+                textTransform: 'none',
+                fontSize: '0.875rem'}}
           > 
             Connect Broker
           </Button>
 
           <Button 
-            component="label" 
-            role={undefined} 
+            component="label"
             variant="contained" 
             tabIndex={-1} 
             startIcon={<LoginIcon />}
             onClick={handleAutoLoginAll}
             disabled={isLoading}
+            sx={{
+                py: 0.5,
+                px: 1.5,
+                textTransform: 'none',
+                fontSize: '0.875rem'}}
           > 
             Auto Login All
           </Button>

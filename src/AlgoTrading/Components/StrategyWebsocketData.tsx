@@ -53,15 +53,20 @@ const StrategyWebsocketData: React.FC<StrategyWebsocketDataProps> = ({ isVisible
     }, [isVisible, strategyId]);
 
     const priceChangePercent = () => {
-        if (!wsData?.data?.tikData?.last_traded_price || !wsData?.data?.tikData?.open_price_day) {
+        if (!wsData?.data?.tikData?.last_traded_price || !wsData?.data?.supertrend?.previousDayClose) {
             return 0;
         }
 
         const lastPrice = wsData.data.tikData?.last_traded_price / 100;
-        const openPrice = wsData.data.tikData?.open_price_day / 100;
-        const priceChangePercent = openPrice ? (((lastPrice - openPrice) / openPrice) * 100).toFixed(2) : null;
+        const openPrice = wsData.data.supertrend?.previousDayClose;
+        const priceChangePercent =
+            typeof openPrice === 'number' &&
+            typeof lastPrice === 'number' &&
+            openPrice !== 0
+                ? +(((lastPrice - openPrice) / openPrice) * 100).toFixed(2)  // “+” turns the string from toFixed into a number
+                : null;
 
-        return priceChangePercent !== null ? parseFloat(priceChangePercent) : 0;
+        return priceChangePercent !== null ? priceChangePercent : 0;
     };
 
     if (!isVisible || !wsData?.data?.supertrend) {
@@ -224,6 +229,7 @@ const StrategyWebsocketData: React.FC<StrategyWebsocketDataProps> = ({ isVisible
                                 color: theme => theme.palette.primary.main,
                                 fontWeight: 600,
                                 mb: 2,
+                                height: 50,
                                 display: 'flex',
                                 alignItems: 'center',
                             }}>
@@ -282,7 +288,7 @@ const StrategyWebsocketData: React.FC<StrategyWebsocketDataProps> = ({ isVisible
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={12}>
                     <Card elevation={0} sx={{
                         backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
                         borderRadius: 2,
@@ -321,7 +327,7 @@ const StrategyWebsocketData: React.FC<StrategyWebsocketDataProps> = ({ isVisible
                                             backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
                                         }}>
                                             <Typography variant="body2" color="textSecondary">{key}</Typography>
-                                            <Typography variant="h6">{value}</Typography>
+                                            <Typography variant="h6">{typeof value === 'boolean' ? (value ? 'True' : 'False') : value}</Typography>
                                         </Box>
                                     </Grid>
                                 ))}

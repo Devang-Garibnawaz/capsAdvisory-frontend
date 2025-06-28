@@ -55,7 +55,7 @@ const LogsListingManagement = () => {
         const [expanded, setExpanded] = React.useState(false);
       
         return (
-          <div>
+          <div style={{wordBreak:'break-word', overflowWrap:'anywhere'}}>
             {expanded ? value : value.slice(0, 200)}&nbsp;
             {value.length > 200 && (
               // eslint-disable-next-line jsx-a11y/anchor-is-valid

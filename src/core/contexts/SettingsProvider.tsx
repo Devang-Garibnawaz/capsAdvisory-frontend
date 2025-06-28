@@ -32,7 +32,7 @@ type SettingsProviderProps = {
 const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const [collapsed, setCollapsed] = useLocalStorage("sidebarcollapsed", false);
   const [direction, setDirection] = useLocalStorage("direction", "ltr");
-  const [mode, setMode] = useState(localStorage.getItem("mode") || "light");
+  const [mode, setMode] = useState(localStorage.getItem("mode") || "dark");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {

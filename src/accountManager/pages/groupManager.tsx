@@ -1499,12 +1499,16 @@ const GroupManager = () => {
             <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
               <Button 
                 component="label" 
-                role={undefined} 
                 variant="contained" 
                 tabIndex={-1} 
                 startIcon={<GroupAddIcon />}
                 onClick={handleOpenCreateGroup}
                 disabled={isLoading || isSubmitting}
+                sx={{
+                py: 0.5,
+                px: 1.5,
+                textTransform: 'none',
+                fontSize: '0.875rem'}}
               > 
                 Create Group
               </Button>

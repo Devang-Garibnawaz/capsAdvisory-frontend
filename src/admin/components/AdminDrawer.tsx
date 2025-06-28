@@ -101,11 +101,11 @@ const AdminDrawer = ({
         //   key: "admin.drawer.menu.CrudeoilTrading",
         //   path: "/admin/crudeoil-trading",
         // },
-        {
-          icon: Login,
-          key: "admin.drawer.menu.AngelBrokingLogin",
-          path: "angel-broking-login",
-        },
+        // {
+        //   icon: Login,
+        //   key: "admin.drawer.menu.AngelBrokingLogin",
+        //   path: "angel-broking-login",
+        // },
         {
           icon: SpeakerNotes,
           key: "admin.drawer.menu.LogsManagement",

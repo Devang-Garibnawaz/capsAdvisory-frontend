@@ -12,12 +12,14 @@ import {
     MenuItem,
     Typography,
     Box,
-    SelectChangeEvent
+    SelectChangeEvent,
+    FormControlLabel
 } from '@mui/material';
 import { IndicatorsResponse, StrategyData } from '../types/strategy';
 import { fetchIndicators } from '../hooks/strategyService';
 import { useSnackbar } from '../../core/contexts/SnackbarProvider';
 import { set } from 'date-fns';
+import Checkbox from '@mui/material/Checkbox';
 
 interface CreateStrategyDialogProps {
     open: boolean;
@@ -50,6 +52,7 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
         minContractPrice: 150,
         maxContractPrice: 200
     });
+    const [useStopLoss, setUseStopLoss] = useState(false);
     const isEditMode = !!strategyData;
 
     useEffect(() => {
@@ -89,12 +92,15 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
         setSelectedIndicator(value);
         
         // Reset parameters when indicator changes but preserve price range
-        const { minContractPrice, maxContractPrice, interval, index } = parameters;
+        const { minContractPrice, maxContractPrice, interval, index, useStopLoss, stopLossPoints, targetPoints } = parameters;
         const defaultParams: Record<string, number | null> = {
             minContractPrice,
             maxContractPrice,
             interval,
-            index
+            index,
+            useStopLoss,
+            stopLossPoints,
+            targetPoints
         };
         // If an indicator is selected, load its default parameters
         if (value && indicators[value]) {
@@ -108,12 +114,20 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
     const handleParameterChange = (paramName: string, value: any) => {
         setParameters(prev => ({
             ...prev,
-            [paramName]: Number(value)
+            [paramName]: isNaN(value) ? value : Number(value)
         }));
     };
 
     const handleSubmit = () => {
         
+        if(useStopLoss){
+            const { stopLossPoints, targetPoints } = parameters;
+            if (stopLossPoints == null || targetPoints == null || stopLossPoints < 0 || targetPoints < 0) {
+                snackbar.error("Please enter valid stop loss and target points.");
+                return;
+            }
+        }
+        parameters.useStopLoss = useStopLoss;
         const strategyData: StrategyData = {
             name: strategyName,
             description: strategyDescription,
@@ -131,7 +145,10 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
         setSelectedIndicator('');
         setParameters({
             minContractPrice: 150,
-            maxContractPrice: 200
+            maxContractPrice: 200,
+            useStopLoss: false,
+            stopLossPoints: null,
+            targetPoints: null,
         });
     };
 
@@ -166,7 +183,7 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
                             value={parameters.minContractPrice ?? ''}
                             onChange={(e) => {
                                 const value = e.target.value;
-                                handleParameterChange('minContractPrice', value);
+                                handleParameterChange('minContractPrice', Number(value));
                             }}
                             fullWidth
                             required
@@ -178,7 +195,7 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
                             value={parameters.maxContractPrice ?? ''}
                             onChange={(e) => {
                                 const value = e.target.value;
-                                handleParameterChange('maxContractPrice', value);
+                                handleParameterChange('maxContractPrice', Number(value));
                             }}
                             fullWidth
                             required
@@ -189,6 +206,48 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
                                 : ""}
                         />
                     </Box>
+
+                    <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={parameters.useStopLoss}
+                                    onChange={(e:any) => handleParameterChange('useStopLoss',e.target.checked)}
+                                />
+                            }
+                            label="Use Stop Loss"
+                        />
+                    </Box>
+                    {parameters.useStopLoss && <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                        <TextField
+                            label="Stop Loss Points"
+                            type="number"
+                            value={parameters.stopLossPoints ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                handleParameterChange('stopLossPoints', Number(value));
+                            }}
+                            fullWidth
+                            required
+                            inputProps={{ min: 0 }}
+                        />
+                        <TextField
+                            label="Target Points"
+                            type="number"
+                            value={parameters.targetPoints ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                handleParameterChange('targetPoints', Number(value));
+                            }}
+                            fullWidth
+                            required
+                            inputProps={{ min: parameters.stopLossPoints || 0 }}
+                            error={parameters.targetPoints != null && parameters.stopLossPoints != null && parameters.targetPoints < parameters.stopLossPoints}
+                            helperText={parameters.targetPoints != null && parameters.stopLossPoints != null && parameters.targetPoints < parameters.stopLossPoints
+                                ? "Target points must be greater than stop loss points"
+                                : ""}
+                        />
+                    </Box>}
 
                     <FormControl sx={{ mt: 2 }} fullWidth required>
                         <InputLabel>Select Interval</InputLabel>

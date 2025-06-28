@@ -28,6 +28,8 @@ const CreateOrder = ({group, open, onClose }: {group: any; open: boolean; onClos
   const [product, setProduct] = useState("INTRADAY");
   const [quantity, setQuantity] = useState(75);
   const [orderType, setOrderType] = useState('Market');
+  const [limitPrice, setLimitPrice] = useState<number>(0);
+  const [triggerPrice, setTriggerPrice] = useState<number>(0);
   const [orderAction, setOrderAction] = useState("BUY");
   const [scriptList, setScriptList] = useState([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -102,6 +104,11 @@ const CreateOrder = ({group, open, onClose }: {group: any; open: boolean; onClos
 
     }
 
+    const handleOrderTypeChange = (e:any) =>{
+      const value = e.target.value;
+      setOrderType(value);
+    }
+
 
   const handlePlaceOrder = async () => {
     
@@ -110,7 +117,20 @@ const CreateOrder = ({group, open, onClose }: {group: any; open: boolean; onClos
         return;
     }
 
-    const orderDetails = {
+    if(orderType.toUpperCase() === 'LIMIT' || orderType.toUpperCase() === 'SL'){
+        if(!limitPrice || limitPrice <= 0){
+          snackbar.warning('Please enter limit price!');
+          return;
+        }
+    }
+    if(orderType.toUpperCase() === 'SL'){
+        if(!triggerPrice || triggerPrice <= 0){
+          snackbar.warning('Please enter trigger price!');
+          return;
+        }
+    }
+
+    const orderDetails:any = {
       index: indexType,
       scriptType,
       script,
@@ -120,6 +140,12 @@ const CreateOrder = ({group, open, onClose }: {group: any; open: boolean; onClos
       orderAction,
       groupId: group.id
     };
+    if(orderType.toUpperCase() === 'LIMIT' || orderType.toUpperCase() === 'SL'){
+      orderDetails.limitPrice = limitPrice;
+    }
+    if(orderType.toUpperCase() === 'SL'){
+      orderDetails.triggerPrice = triggerPrice;
+    }
     try {
         const result = await placeMannulOrder(orderDetails);
         if(result.status){
@@ -234,6 +260,28 @@ const CreateOrder = ({group, open, onClose }: {group: any; open: boolean; onClos
               </Select>
             </FormControl>
           </Grid>
+          {(orderType.toUpperCase() === "LIMIT" || orderType.toUpperCase() === "SL") && <Grid item xs={12} sm={4}>
+            <FormControl fullWidth>
+              {/* <InputLabel>Limit Price</InputLabel> */}
+              <TextField
+                value={limitPrice}
+                label="Limit Price"
+                type="Number"
+                onChange={(e) => setLimitPrice(Number(e.target.value))}
+              />
+            </FormControl>
+          </Grid>}
+          {orderType.toUpperCase() === "SL" && <Grid item xs={12} sm={4}>
+            <FormControl fullWidth>
+              {/* <InputLabel>Trigger Price</InputLabel> */}
+              <TextField
+                value={triggerPrice}
+                label="Trigger Price"
+                type="Number"
+                onChange={(e) => setTriggerPrice(Number(e.target.value))}
+              />
+            </FormControl>
+          </Grid>}
 
           <Grid item xs={12} sm={4}>
            <ToggleButtonGroup
