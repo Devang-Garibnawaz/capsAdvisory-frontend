@@ -35,6 +35,11 @@ const StrategyWebsocketData: React.FC<StrategyWebsocketDataProps> = ({ isVisible
             ws.current.onopen = () => console.log('Connected to strategy websocket');
             ws.current.onmessage = (event: MessageEvent) => {
                 const data = JSON.parse(event.data);
+                if(data.status === 'inactive'){
+                    postal.publish({
+                        topic: 'strategy_update_inactive',
+                    });
+                }
                 if (data.type === 'strategy_update') {
                     setWsData(data);
                 }

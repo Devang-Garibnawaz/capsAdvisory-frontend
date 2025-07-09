@@ -52,7 +52,6 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
         minContractPrice: 150,
         maxContractPrice: 200
     });
-    const [useStopLoss, setUseStopLoss] = useState(false);
     const isEditMode = !!strategyData;
 
     useEffect(() => {
@@ -78,9 +77,13 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
             setStrategyName(strategyData.name);
             setStrategyDescription(strategyData.description);
             setSelectedIndicator(strategyData.indicator);
+            
             setParameters(strategyData.parameters || {
                 minContractPrice: 150,
-                maxContractPrice: 200
+                maxContractPrice: 200,
+                useStopLoss: false,
+                stopLossPoints: null,
+                targetPoints: null,
             });
         } else {
             resetForm();
@@ -120,14 +123,14 @@ export default function CreateStrategyDialog({ open, onClose, onSubmit, strategy
 
     const handleSubmit = () => {
         
-        if(useStopLoss){
+        if(parameters.useStopLoss){
             const { stopLossPoints, targetPoints } = parameters;
             if (stopLossPoints == null || targetPoints == null || stopLossPoints < 0 || targetPoints < 0) {
                 snackbar.error("Please enter valid stop loss and target points.");
                 return;
             }
         }
-        parameters.useStopLoss = useStopLoss;
+        
         const strategyData: StrategyData = {
             name: strategyName,
             description: strategyDescription,

@@ -43,6 +43,7 @@ import {
   stopStrategy,
   updateStrategy,
 } from "../hooks/strategyService";
+import postal from "postal";
 
 // Common styles for table cells
 const commonCellStyles = (theme: Theme) => ({
@@ -104,6 +105,15 @@ const Strategies: React.FC = () => {
 
   useEffect(() => {
     loadStrategies();
+  }, []);
+
+  useEffect(() =>{
+    postal.subscribe({
+      topic: 'strategy_update_inactive',
+      callback: () => {
+        loadStrategies();
+      }
+    });
   }, []);
 
   const handleSaveSymbolList = async () => {
