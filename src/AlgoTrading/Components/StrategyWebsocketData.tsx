@@ -6,12 +6,11 @@ import {
     Typography,
     Box,
     alpha,
-    CardHeader,
     Stack,
     CircularProgress,
 } from '@mui/material';
-import { StrategyData } from '../types/strategy';
 import moment from 'moment';
+import * as postal from 'postal';
 
 interface StrategyWebsocketDataProps {
     isVisible: boolean;

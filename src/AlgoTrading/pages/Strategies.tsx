@@ -112,6 +112,7 @@ const Strategies: React.FC = () => {
       topic: 'strategy_update_inactive',
       callback: () => {
         loadStrategies();
+        setShowStandaloneWsData(false);
       }
     });
   }, []);
