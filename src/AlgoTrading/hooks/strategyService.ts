@@ -15,7 +15,7 @@ const UPDATE_STRATEGY = 'strategies/updateStrategy';
 export const fetchIndicators = async (): Promise<IndicatorsResponse> => {
     const response = await fetch(`${BASE_URL}${GET_INDICATOS}`,{
         method: 'GET',
-        headers: getRequiredHeaders()
+        headers: await getRequiredHeaders()
     });
     return response.json();
 };
@@ -23,7 +23,7 @@ export const fetchIndicators = async (): Promise<IndicatorsResponse> => {
 export const createStrategy = async (strategyData: any): Promise<any> => {
     const response = await fetch(`${BASE_URL}${POST_CREATE_STRATEGY}`, {
         method: 'POST',
-        headers: getRequiredHeaders(),
+        headers: await getRequiredHeaders(),
         body: JSON.stringify(strategyData)
     });
     return response.json();
@@ -32,7 +32,7 @@ export const createStrategy = async (strategyData: any): Promise<any> => {
 export const fetchStrategies = async () => {
     const response = await fetch(`${BASE_URL}${GET_STRATEGIES}`, {
         method: 'GET',
-        headers: getRequiredHeaders()
+        headers: await getRequiredHeaders()
     });
 
     return response.json();
@@ -41,7 +41,7 @@ export const fetchStrategies = async () => {
 export const deleteStrategy = async (id: string) => {
     const response = await fetch(`${BASE_URL}${DELETE_STRATEGY}/${id}`, {
         method: 'DELETE',
-        headers: getRequiredHeaders()
+        headers: await getRequiredHeaders()
     });
     
     return response.json();
@@ -50,7 +50,7 @@ export const deleteStrategy = async (id: string) => {
 export const deployStrategy = async (id: string) => {
     const response = await fetch(`${BASE_URL}${DEPLOY_STRATEGY}/${id}`, {
         method: 'POST',
-        headers: getRequiredHeaders()
+        headers: await getRequiredHeaders()
     });
 
     return response.json();
@@ -59,7 +59,7 @@ export const deployStrategy = async (id: string) => {
 export const stopStrategy = async (id: string) => {
     const response = await fetch(`${BASE_URL}${STOP_STRATEGY}/${id}`, {
         method: 'POST',
-        headers: getRequiredHeaders()
+        headers: await getRequiredHeaders()
     });
     
     if (!response.ok) {
@@ -72,7 +72,7 @@ export const stopStrategy = async (id: string) => {
 export const updateStrategy = async (id: string, strategyData: any): Promise<any> => {
     const response = await fetch(`${BASE_URL}${UPDATE_STRATEGY}/${id}`, {
         method: 'PUT',
-        headers: getRequiredHeaders(),
+        headers: await getRequiredHeaders(),
         body: JSON.stringify(strategyData)
     });
     

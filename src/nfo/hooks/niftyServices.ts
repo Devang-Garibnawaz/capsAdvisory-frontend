@@ -109,7 +109,7 @@ export async function ExitAllPostions(){
     try {
         const requestOptions = {
             method: 'POST',
-            headers: getRequiredHeaders()
+            headers: await getRequiredHeaders()
         };
         const response = await fetch(`${BASE_URL}${POST_EXIT_POSTIONS}`, requestOptions);
         return await response.json();

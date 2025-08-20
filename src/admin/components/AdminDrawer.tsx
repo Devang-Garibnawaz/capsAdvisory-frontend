@@ -81,11 +81,11 @@ const AdminDrawer = ({
           key: "admin.drawer.menu.LoginUsersManagement",
           path: "/admin/login-users"
         },
-        {
-          icon: SsidChartIcon,
-          key: "admin.drawer.menu.Strategies",
-          path: "/admin/strategies"
-        },
+        // {
+        //   icon: SsidChartIcon,
+        //   key: "admin.drawer.menu.Strategies",
+        //   path: "/admin/strategies"
+        // },
         // {
         //   icon: WaterFallChartIcon,
         //   key: "admin.drawer.menu.NiftyTrading",

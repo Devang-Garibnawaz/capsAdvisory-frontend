@@ -19,7 +19,7 @@ const GET_SCRIPT_TYPEs = 'candles/getStrikePrice';
 export async function getAvailableBrokersList() {
     try {
         
-        const headers = getRequiredHeaders();
+        const headers = await getRequiredHeaders();
         const response = await fetch(`${BASE_URL}${GET_AVAILABLE_BROKERS_LIST}`, {
             method: 'GET',
             headers: headers
@@ -35,7 +35,7 @@ export async function getAvailableBrokersList() {
 
 export async function addDematAccount(brokerDetails: any) {
     try {
-        const headers = getRequiredHeaders();
+        const headers = await getRequiredHeaders();
         const response = await fetch(`${BASE_URL}${ADD_DEMAT_ACCOUNT}`, {
             method: 'POST',
             headers: {
@@ -55,7 +55,7 @@ export async function addDematAccount(brokerDetails: any) {
 
 export async function getDematAccounts() {
     try {
-        const headers = getRequiredHeaders();
+        const headers = await getRequiredHeaders();
         const response = await fetch(`${BASE_URL}${GET_DEMAT_ACCOUNTS}`, {
             method: 'GET',
             headers: headers
@@ -71,7 +71,7 @@ export async function getDematAccounts() {
 
 export async function updateDematAccountTradeToggle(dematAccountId: string, isTradeEnable: boolean) {
     try {
-        const headers = getRequiredHeaders();
+        const headers = await getRequiredHeaders();
         const response = await fetch(`${BASE_URL}${UPDATE_DEMAT_ACCOUNT_TRADE_TOGGLE}`, {
             method: 'PUT',
             headers: {
@@ -96,7 +96,7 @@ export const deleteDematAccount = async (accountId: string) => {
   try {
     const response = await fetch(`${BASE_URL}${DELETE_DEMAT_ACCOUNT}/${accountId}`, {
       method: 'DELETE',
-      headers: getRequiredHeaders()
+      headers: await getRequiredHeaders()
     });
 
     const data = await response.json();
@@ -111,7 +111,7 @@ export const autoLoginUsers = async () => {
   try {
     const response = await fetch(`${BASE_URL}${AUTO_LOGIN_USERS}`, {
       method: 'POST',
-      headers: getRequiredHeaders()
+      headers: await getRequiredHeaders()
     });
     
     const data = await response.json();
@@ -128,7 +128,7 @@ export const cancelAllOrdersByGroup = async (groupId ='', orderids: string[] = [
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: getRequiredHeaders(),
+      headers: await getRequiredHeaders(),
       body: JSON.stringify({orderids})
     });
 
@@ -147,7 +147,7 @@ export const cancelAllOrdersByUser = async (accountId: string): Promise<any> => 
   try {
     const response = await fetch(`${BASE_URL}${CANCEL_ALL_ORDERS_USER}/${accountId}`, {
       method: 'POST',
-      headers: getRequiredHeaders(),
+      headers: await getRequiredHeaders(),
     });
 
     const data = await response.json();
@@ -165,7 +165,7 @@ export const cancelOrderByOrderId = async (orderId: string) => {
   try {
     const response = await fetch(`${BASE_URL}${CANCEL_ORDER_BY_ORDER_ID}/${orderId}`, {
       method: 'POST',
-      headers: getRequiredHeaders(),
+      headers: await getRequiredHeaders(),
     });
 
     const data = await response.json();
@@ -183,7 +183,7 @@ export const squareOffByUser = async (position: any) => {
   try {
     const response = await fetch(`${BASE_URL}${SQUARE_OFF_BY_USER}`, {
       method: 'POST',
-      headers: getRequiredHeaders(),
+      headers: await getRequiredHeaders(),
       body: JSON.stringify(position)
     });
 
@@ -202,7 +202,7 @@ export const updateQuantity = async (account:any) =>{
   try {
     const response = await fetch(`${BASE_URL}${UPDATE_QTY}`, {
       method: 'POST',
-      headers: getRequiredHeaders(),
+      headers: await getRequiredHeaders(),
       body: JSON.stringify(account)
     });
 
@@ -221,7 +221,7 @@ export const getScriptData = async (index: string) =>{
  try {
     const response = await fetch(`${BASE_URL}${GET_SCRIPT_TYPEs}`, {
       method: 'POST',
-      headers: getRequiredHeaders(),
+      headers: await getRequiredHeaders(),
       body: JSON.stringify({index})
     });
 

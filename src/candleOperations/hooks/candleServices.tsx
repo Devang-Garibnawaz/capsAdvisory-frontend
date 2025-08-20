@@ -10,7 +10,7 @@ export const fetchOptionContracts = async () =>{
     try {
         const response = await fetch(`${BASE_URL}${POST_OPTION_CONTRACTS}`, {
         method: 'POST',
-        headers: getRequiredHeaders(),
+        headers: await getRequiredHeaders(),
         body: JSON.stringify({index: 'NIFTY'})
     });
         const json = await response.json();
@@ -24,7 +24,7 @@ export async function fetchSymbolList() {
     try {
         const response = await fetch(`${BASE_URL}${FETCH_SYMBOL_LIST}`, {
             method: 'POST',
-            headers: getRequiredHeaders(),
+            headers: await getRequiredHeaders(),
         });
         const json = await response.json();
         return json;
@@ -38,7 +38,7 @@ export async function getSymbolDetails(symbol: string) {
     try {
         const response = await fetch(`${BASE_URL}${GET_SYMBOL_DETAILS}`, {
             method: 'POST',
-            headers: getRequiredHeaders(),
+            headers: await getRequiredHeaders(),
             body: JSON.stringify({symbol: symbol}),
         });
         const json = await response.json();

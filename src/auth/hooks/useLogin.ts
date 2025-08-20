@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useMutation } from "react-query";
 import { getBaseUrl } from "../../http/globalUrl";
+import { getRequiredHeaders } from "../../services/userService";
 
 const BASE_URL = getBaseUrl();
 const GET_LOGIN_URL = 'users/login';
@@ -14,7 +15,7 @@ const login = async ({
 }): Promise<any> => {
   const requestOptions = {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await getRequiredHeaders(),
     body: JSON.stringify({ email, password })
   };
   const data  = await (await fetch(`${BASE_URL}${GET_LOGIN_URL}`,requestOptions)).json();//await axios.post(`${BASE_URL}${GET_LOGIN_URL}`, { email, password });

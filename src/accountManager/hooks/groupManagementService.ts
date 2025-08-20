@@ -88,7 +88,7 @@ export interface GroupChild {
 
 export async function getGroups() {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${GET_GROUPS}`, {
       method: 'GET',
       headers: headers
@@ -104,7 +104,7 @@ export async function getGroups() {
 
 export async function createGroup(groupData: CreateGroupRequest) {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${CREATE_GROUP}`, {
       method: 'POST',
       headers: {
@@ -124,7 +124,7 @@ export async function createGroup(groupData: CreateGroupRequest) {
 
 export async function updateGroup(groupData: UpdateGroupRequest) {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${UPDATE_GROUP}`, {
       method: 'PUT',
       headers: {
@@ -144,7 +144,7 @@ export async function updateGroup(groupData: UpdateGroupRequest) {
 
 export async function deleteGroup(groupId: string) {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${DELETE_GROUP}`, {
       method: 'DELETE',
       headers: {
@@ -164,7 +164,7 @@ export async function deleteGroup(groupId: string) {
 
 export async function toggleMaster(data: ToggleMasterRequest) {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${TOGGLE_MASTER}`, {
       method: 'PUT',
       headers: {
@@ -184,7 +184,7 @@ export async function toggleMaster(data: ToggleMasterRequest) {
 
 export async function toggleTrading(data: ToggleTradingRequest) {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${TOGGLE_TRADING}`, {
       method: 'PUT',
       headers: {
@@ -204,7 +204,7 @@ export async function toggleTrading(data: ToggleTradingRequest) {
 
 export async function addChildToGroup(groupId: string, childData: ChildAccount) {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${ADD_CHILD}`, {
       method: 'POST',
       headers: {
@@ -224,7 +224,7 @@ export async function addChildToGroup(groupId: string, childData: ChildAccount) 
 
 export async function removeChildFromGroup(groupId: string, accountId: string) {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${REMOVE_CHILD}`, {
       method: 'POST',
       headers: {
@@ -244,7 +244,7 @@ export async function removeChildFromGroup(groupId: string, accountId: string) {
 
 export async function getGroupChildren(groupId: string) {
   try {
-    const headers = getRequiredHeaders();
+    const headers = await getRequiredHeaders();
     const response = await fetch(`${BASE_URL}${GET_GROUP_CHILDREN}/${groupId}`, {
       method: 'GET',
       headers: headers
@@ -262,7 +262,7 @@ export async function squareOffAllByGroup(groupId: string) {
   try {
     const response = await fetch(`${BASE_URL}${SQUARE_OFF_ALL_BY_GROUP}/${groupId}`, {
       method: 'POST',
-      headers: getRequiredHeaders(),
+      headers: await getRequiredHeaders(),
     });
 
     const json = await response.json();
@@ -277,7 +277,7 @@ export async function placeMannulOrder(orderDetails: any){
   try {
     const response = await fetch(`${BASE_URL}${POST_PLACE_MANNUAL_ORDER}`, {
       method: 'POST',
-      headers: getRequiredHeaders(),
+      headers: await getRequiredHeaders(),
       body: JSON.stringify(orderDetails)
     });
 

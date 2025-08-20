@@ -13,7 +13,7 @@ export async function FetchLoginUsersDataService(date:Date){
     try {
         let strDate = date.getFullYear()+'-'+(date.getMonth() + 1) +'-'+date.getDate();
         const response = await fetch(`${BASE_URL}${GET_LOGIN_USERS_LIST}?date=${strDate}`,{
-            headers: getRequiredHeaders()
+            headers: await getRequiredHeaders()
         });
         const json = await response.json();
         return json.usersData;
@@ -43,7 +43,7 @@ export async function deleteLoginUser(id: string){
     try {
         const requestOptions = {
             method: 'POST',
-            headers: getRequiredHeaders(),
+            headers: await getRequiredHeaders(),
             body: JSON.stringify({id})
         };
         const response = await fetch(`${BASE_URL}${POST_DELETE_LOGIN_USER}`,requestOptions);
