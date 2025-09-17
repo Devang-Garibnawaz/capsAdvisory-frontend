@@ -1,23 +1,27 @@
+import { useState } from "react";
 import axios from "axios";
-import { useMutation, useQueryClient } from "react-query";
 import { removeOne } from "../../core/utils/crudUtils";
 import { Event } from "../types/event";
 
-const deleteEvent = async (eventId: string): Promise<string> => {
+const deleteEventRequest = async (eventId: string): Promise<string> => {
   const { data } = await axios.delete("/api/events", { data: eventId });
   return data;
 };
 
 export function useDeleteEvent() {
-  const queryClient = useQueryClient();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
 
-  const { isLoading, mutateAsync } = useMutation(deleteEvent, {
-    onSuccess: (eventId: string) => {
-      queryClient.setQueryData<Event[]>(["events"], (oldEvents) =>
-        removeOne(oldEvents, eventId)
-      );
-    },
-  });
+  const deleteEvent = async (eventId: string) => {
+    try {
+      setIsDeleting(true);
+      const result = await deleteEventRequest(eventId);
+      setEvents((oldEvents) => removeOne(oldEvents, eventId));
+      return result;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
-  return { isDeleting: isLoading, deleteEvent: mutateAsync };
+  return { isDeleting, deleteEvent, events };
 }

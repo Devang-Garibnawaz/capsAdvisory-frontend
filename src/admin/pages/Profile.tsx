@@ -11,7 +11,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../auth/contexts/AuthProvider";
-import QueryWrapper from "../../core/components/QueryWrapper";
 import { useSnackbar } from "../../core/contexts/SnackbarProvider";
 import AdminAppBar from "../components/AdminAppBar";
 import AdminToolbar from "../components/AdminToolbar";
@@ -104,9 +103,7 @@ const Profile = () => {
               ))}
             </Tabs>
           </Box>
-          <QueryWrapper>
-            <Outlet />
-          </QueryWrapper>
+          <Outlet />
         </Grid>
       </Grid>
     </React.Fragment>

@@ -2,10 +2,9 @@ import React, { createContext, useContext } from "react";
 import { useLocalStorage } from "../../core/hooks/useLocalStorage";
 import { useAngelbrokingLogin } from "../hooks/useAngelBrokingLogin";
 import { useLogin } from "../hooks/useLogin";
-import { useLogout } from "../hooks/useLogout";
 import { useUserInfo } from "../hooks/useUserInfo";
 import { UserInfo } from "../types/userInfo";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface AuthContextInterface {
   hasRole: (roles?: string[]) => {};
@@ -29,7 +28,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   
   const { isLoggingIn, login } = useLogin();
   const {isAngelbrokingLoggingIn,angelBrokingLogin} = useAngelbrokingLogin();
-  const { data: userInfo } = useUserInfo(authKey);
+  const { data } = useUserInfo(authKey);
+  const userInfo = data || undefined;
   
   if (!userInfo && authKey) {
     localStorage.setItem('authkey','');

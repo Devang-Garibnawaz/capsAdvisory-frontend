@@ -1,7 +1,7 @@
+import { useState } from "react";
 import axios from "axios";
-import { useMutation } from "react-query";
 
-const forgotPasswordSubmit = async ({
+const forgotPasswordSubmitRequest = async ({
   code,
   newPassword,
 }: {
@@ -16,6 +16,20 @@ const forgotPasswordSubmit = async ({
 };
 
 export function useForgotPasswordSubmit() {
-  const { isLoading, mutateAsync } = useMutation(forgotPasswordSubmit);
-  return { isLoading, forgotPasswordSubmit: mutateAsync };
+  const [isLoading, setIsLoading] = useState(false);
+
+  const forgotPasswordSubmit = async (params: {
+    code: string;
+    newPassword: string;
+  }) => {
+    try {
+      setIsLoading(true);
+      const result = await forgotPasswordSubmitRequest(params);
+      return result;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { isLoading, forgotPasswordSubmit };
 }

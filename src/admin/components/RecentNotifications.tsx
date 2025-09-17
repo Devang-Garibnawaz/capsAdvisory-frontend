@@ -27,13 +27,13 @@ const RecentNotifications = () => {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const { data, isError, isLoading } = useNotifications();
+  const { notifications, isLoading, error } = useNotifications();
 
   const open = Boolean(anchorEl);
 
   const unreadCount = useMemo(
-    () => data && data.filter((notification) => notification.unread).length,
-    [data]
+    () => notifications && notifications.filter((notification) => notification.unread).length,
+    [notifications]
   );
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -74,13 +74,13 @@ const RecentNotifications = () => {
         }}
       >
         <Box sx={{ width: 360 }}>
-          {!isLoading && !isError && data && data.length > 0 && (
+          {!isLoading && !error && notifications && notifications.length > 0 && (
             <List
               component="nav"
               aria-label="notifications popover"
               sx={{ px: 2 }}
             >
-              {data.map((notification) => (
+              {notifications.map((notification) => (
                 <ListItem
                   button
                   component={NavLink}
@@ -110,10 +110,10 @@ const RecentNotifications = () => {
               ))}
             </List>
           )}
-          {!isLoading && !isError && (!data || data.length === 0) && (
+          {!isLoading && !error && (!notifications || notifications.length === 0) && (
             <Empty title={t("admin.header.notifications.empty.title")} />
           )}
-          {isError && (
+          {error && (
             <Result
               status="error"
               subTitle={t("common.errors.unexpected.subTitle")}

@@ -1,23 +1,27 @@
+import { useState } from "react";
 import axios from "axios";
-import { useMutation, useQueryClient } from "react-query";
 import { addOne } from "../../core/utils/crudUtils";
 import { Event } from "../types/event";
 
-const addEvent = async (event: Event): Promise<Event> => {
+const addEventRequest = async (event: Event): Promise<Event> => {
   const { data } = await axios.post("/api/events", event);
   return data;
 };
 
 export function useAddEvent() {
-  const queryClient = useQueryClient();
+  const [isAdding, setIsAdding] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
 
-  const { isLoading, mutateAsync } = useMutation(addEvent, {
-    onSuccess: (event: Event) => {
-      queryClient.setQueryData<Event[]>(["events"], (oldEvents) =>
-        addOne(oldEvents, event)
-      );
-    },
-  });
+  const addEvent = async (event: Event) => {
+    try {
+      setIsAdding(true);
+      const newEvent = await addEventRequest(event);
+      setEvents((oldEvents) => addOne(oldEvents, newEvent));
+      return newEvent;
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
-  return { isAdding: isLoading, addEvent: mutateAsync };
+  return { isAdding, addEvent, events };
 }

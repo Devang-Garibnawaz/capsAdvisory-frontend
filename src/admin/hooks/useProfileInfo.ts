@@ -1,5 +1,5 @@
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { useQuery } from "react-query";
 import { ProfileInfo } from "../types/profileInfo";
 
 const fetchProfileInfo = async (): Promise<ProfileInfo> => {
@@ -8,5 +8,26 @@ const fetchProfileInfo = async (): Promise<ProfileInfo> => {
 };
 
 export function useProfileInfo() {
-  return useQuery("profile-info", () => fetchProfileInfo());
+  const [profileInfo, setProfileInfo] = useState<ProfileInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await fetchProfileInfo();
+        setProfileInfo(data);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return { profileInfo, isLoading, error };
 }

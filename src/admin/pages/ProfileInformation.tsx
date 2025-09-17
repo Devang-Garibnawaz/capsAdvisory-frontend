@@ -28,16 +28,16 @@ const ProfileInformation = () => {
   const snackbar = useSnackbar();
   const { t } = useTranslation();
 
-  const { data } = useProfileInfo();
+  const { profileInfo } = useProfileInfo();
   const { isUpdating, updateProfileInfo } = useUpdateProfileInfo();
 
   const formik = useFormik({
     initialValues: {
-      email: data ? data.email : "",
-      firstName: data ? data.firstName : "",
-      gender: data ? data.gender : undefined,
-      job: data ? data.job : "",
-      lastName: data ? data.lastName : "",
+      email: profileInfo ? profileInfo.email : "",
+      firstName: profileInfo ? profileInfo.firstName : "",
+      gender: profileInfo ? profileInfo.gender : undefined,
+      job: profileInfo ? profileInfo.job : "",
+      lastName: profileInfo ? profileInfo.lastName : "",
     },
     validationSchema: Yup.object({
       email: Yup.string()
@@ -54,7 +54,7 @@ const ProfileInformation = () => {
   });
 
   const handleSubmit = async (values: Partial<ProfileInfo>) => {
-    updateProfileInfo({ ...values, id: data?.id } as ProfileInfo)
+    updateProfileInfo({ ...values, id: profileInfo?.id } as ProfileInfo)
       .then(() => {
         snackbar.success(t("profile.notifications.informationUpdated"));
       })

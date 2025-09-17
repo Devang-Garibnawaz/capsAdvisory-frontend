@@ -1,27 +1,33 @@
-import axios from "axios";
-import { useMutation } from "react-query";
+import { useState } from "react";
 import { UserInfo } from "../types/userInfo";
 import { getBaseUrl } from "../../http/globalUrl";
 
 const BASE_URL = getBaseUrl();
 const GET_LOGIN_URL = 'users/register';
-// const register = async (userInfo: UserInfo): Promise<UserInfo> => {
-//   const { data } = await axios.post("/api/register", userInfo);
-//   return data;
-// };
 
-const register = async (userInfo: UserInfo): Promise<UserInfo> => {
+const registerRequest = async (userInfo: UserInfo): Promise<UserInfo> => {
   userInfo.role = 'admin'; // default role assign as admin
   const requestOptions = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(userInfo)
   };
-  const data  = await (await fetch(`${BASE_URL}${GET_LOGIN_URL}`,requestOptions)).json();//await axios.post(`${BASE_URL}${GET_LOGIN_URL}`, { email, password });
+  const data = await (await fetch(`${BASE_URL}${GET_LOGIN_URL}`, requestOptions)).json();
   return data;
 };
 
 export function useRegister() {
-  const { isLoading, mutateAsync } = useMutation(register);
-  return { isRegistering: isLoading, register: mutateAsync };
+  const [isLoading, setIsLoading] = useState(false);
+
+  const register = async (userInfo: UserInfo) => {
+    try {
+      setIsLoading(true);
+      const result = await registerRequest(userInfo);
+      return result;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { isRegistering: isLoading, register };
 }

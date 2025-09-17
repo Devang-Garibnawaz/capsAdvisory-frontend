@@ -28,7 +28,7 @@ const CalendarApp = () => {
 
   const { addEvent, isAdding } = useAddEvent();
   const { deleteEvent, isDeleting } = useDeleteEvent();
-  const { data } = useEvents();
+  const { events } = useEvents();
   const { isUpdating, updateEvent } = useUpdateEvent();
 
   const processing = isAdding || isDeleting || isUpdating;
@@ -109,7 +109,7 @@ const CalendarApp = () => {
       <Card>
         <Calendar
           contentHeight={720}
-          events={data || []}
+          events={events || []}
           onEventClick={handleOpenEventDialog}
         />
       </Card>

@@ -24,7 +24,7 @@
         "moneyfluxStocksManagement":"MF Stocks List",
         "pnl":"Profit And Loss",
         "CandleOperations":"Candle Operations",
-        "Strategies":"Strategies"
+        "Strategies": "Strategies"
       }
     },
     "header": {
@@ -213,8 +213,8 @@
     "snackbar": {
       "error": "Error",
       "success": "Success",
-      "info": "Info",
-      "warning": "Warning"
+      "warning": "Warning",
+      "info": "Info"
     },
     "today": "Today",
     "update": "Update",

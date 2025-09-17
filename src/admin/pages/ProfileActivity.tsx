@@ -19,16 +19,16 @@ const ProfileActivity = () => {
   const locale = useDateLocale();
   const { t } = useTranslation();
 
-  const { data } = useActivityLogs();
+  const { activityLogs } = useActivityLogs();
 
-  if (!data || data.length === 0) {
+  if (!activityLogs || activityLogs.length === 0) {
     return <Empty title={t("profile.activity.empty")} />;
   }
 
   return (
     <Box sx={{ "& .MuiTimelineItem-root:before": { content: "none" } }}>
       <Timeline>
-        {data.map((log) => (
+        {activityLogs.map((log) => (
           <TimelineItem key={log.id}>
             <TimelineSeparator>
               <TimelineDot color="grey" />

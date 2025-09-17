@@ -2,7 +2,6 @@ import Box from "@material-ui/core/Box";
 import Toolbar from "@material-ui/core/Toolbar";
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import QueryWrapper from "../../core/components/QueryWrapper";
 import SettingsDrawer from "../../core/components/SettingsDrawer";
 import { useSettings } from "../../core/contexts/SettingsProvider";
 import AdminDrawer from "../components/AdminDrawer";
@@ -30,9 +29,7 @@ const AdminLayout = () => {
       />
       <Box component="main" sx={{ flexGrow: 1, pb: 3, px: { xs: 3, sm: 6 } }}>
         <Toolbar />
-        <QueryWrapper>
-          <Outlet />
-        </QueryWrapper>
+        <Outlet />
       </Box>
     </Box>
   );

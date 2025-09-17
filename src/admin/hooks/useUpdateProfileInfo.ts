@@ -1,8 +1,8 @@
+import { useState } from "react";
 import axios from "axios";
-import { useMutation, useQueryClient } from "react-query";
 import { ProfileInfo } from "../types/profileInfo";
 
-const updateProfileInfo = async (
+const updateProfileInfoRequest = async (
   profileInfo: ProfileInfo
 ): Promise<ProfileInfo> => {
   const { data } = await axios.put("/api/profile-info", profileInfo);
@@ -10,13 +10,19 @@ const updateProfileInfo = async (
 };
 
 export function useUpdateProfileInfo() {
-  const queryClient = useQueryClient();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [profileInfo, setProfileInfo] = useState<ProfileInfo | null>(null);
 
-  const { isLoading, mutateAsync } = useMutation(updateProfileInfo, {
-    onSuccess: (profileInfo: ProfileInfo) => {
-      queryClient.setQueryData(["profile-info"], profileInfo);
-    },
-  });
+  const updateProfileInfo = async (info: ProfileInfo) => {
+    try {
+      setIsUpdating(true);
+      const updatedInfo = await updateProfileInfoRequest(info);
+      setProfileInfo(updatedInfo);
+      return updatedInfo;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
-  return { isUpdating: isLoading, updateProfileInfo: mutateAsync };
+  return { isUpdating, updateProfileInfo, profileInfo };
 }

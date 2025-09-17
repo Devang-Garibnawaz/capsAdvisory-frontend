@@ -1,5 +1,4 @@
-import axios from "axios";
-import { useMutation, useQuery } from "react-query";
+import { useState } from "react";
 import { getBaseUrl } from "../../http/globalUrl";
 
 const BASE_URL = getBaseUrl();
@@ -15,7 +14,6 @@ const angelBrokingLogin = async ({
   password: string;
   totp:string;
 }): Promise<string> => {
-  
   const requestOptions = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -26,9 +24,19 @@ const angelBrokingLogin = async ({
 };
 
 export function useAngelbrokingLogin() {
-  const { isLoading, mutateAsync } = useMutation(angelBrokingLogin);
+  const [isLoading, setIsLoading] = useState(false);
 
-  return { isAngelbrokingLoggingIn: isLoading, angelBrokingLogin: mutateAsync };
+  const login = async (params: { clientCode: string; password: string; totp: string }) => {
+    try {
+      setIsLoading(true);
+      const result = await angelBrokingLogin(params);
+      return result;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { isAngelbrokingLoggingIn: isLoading, angelBrokingLogin: login };
 }
 
 export const CheckBrokerStatusService = async (): Promise<any> => {

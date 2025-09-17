@@ -1,7 +1,7 @@
 import axios from "axios";
-import { useMutation } from "react-query";
+import { useState } from "react";
 
-const updatePassword = async ({
+const updatePasswordRequest = async ({
   oldPassword,
   newPassword,
 }: {
@@ -16,6 +16,17 @@ const updatePassword = async ({
 };
 
 export function useUpdatePassword() {
-  const { isLoading, mutateAsync } = useMutation(updatePassword);
-  return { isUpdating: isLoading, updatePassword: mutateAsync };
+  const [isLoading, setIsLoading] = useState(false);
+
+  const updatePassword = async (params: { oldPassword: string; newPassword: string }) => {
+    try {
+      setIsLoading(true);
+      const result = await updatePasswordRequest(params);
+      return result;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { isUpdating: isLoading, updatePassword };
 }
