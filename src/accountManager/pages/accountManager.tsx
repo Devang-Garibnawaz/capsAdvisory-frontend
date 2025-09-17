@@ -10,6 +10,10 @@ import { useSnackbar } from "../../core/contexts/SnackbarProvider";
 import { getDematAccounts, updateDematAccountTradeToggle, deleteDematAccount, autoLoginUsers, updateQuantity } from "../hooks/accountManagementService";
 import { useNavigate } from 'react-router-dom';
 import CloseIcon from '@mui/icons-material/Close';
+import { fetchOptionContracts, fetchSymbolList } from "../../candleOperations/hooks/candleServices";
+import SaveAltIcon from "@mui/icons-material/SaveAlt";
+
+
 interface DematAccount {
   id: string;
   referenceUserId: string;
@@ -74,6 +78,7 @@ const AccountManager = () => {
   const [isConnectBrokerOpen, setIsConnectBrokerOpen] = useState(false);
   const [brokerAccounts, setBrokerAccounts] = useState<BrokerAccount[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
   const [togglingAccountId, setTogglingAccountId] = useState<string | null>(null);
   const [openEditQty, setOpenEditQty] = useState<boolean>(false);
   const [editAccountData, setEditAccountData] = useState<any>(null);
@@ -130,7 +135,18 @@ const AccountManager = () => {
       const response = await autoLoginUsers();
       
       if (response.status) {
-        snackbar.success('Auto login initiated for all users');
+        if (response?.results.some((x:any) => x.status === false)){
+          const failedDetails = response.results
+          .filter((x: any) => x.status === false)
+          .map((x: any) => `Client ID: ${x.clientId} - Error: ${x.message || 'Unknown error'}`)
+          .join('\n');
+          snackbar.error(
+          `Auto login completed with some failures:\n${failedDetails}`
+          );
+          
+        }else{
+          snackbar.success('Auto login initiated for all users');
+        }
       } else {
         snackbar.error(response.message || 'Failed to initiate auto login');
       }
@@ -235,6 +251,40 @@ const AccountManager = () => {
     }
   }
 
+  const handleSaveSymbolList = async () => {
+    try {
+      setLoading("saveSymbolList");
+      const response = await fetchSymbolList();
+      if (response.status) {
+        snackbar.success(response.message);
+      } else {
+        snackbar.error(response.message);
+      }
+    } catch (error) {
+      snackbar.error("Failed to save symbol list");
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleFetchOptionContracts = async () =>{
+    try {
+        setLoading("fetchOptionContracts");
+        const response = await fetchOptionContracts();
+        if(response.status){
+        snackbar.success(response.message);
+        }else{
+        snackbar.error("Failed to fetch option contracts");
+        }
+      
+    } catch (error) {
+      snackbar.error("Failed to fetch option contracts");
+    }finally{
+      setLoading(null);
+
+    }
+  }
+
   return (
     <React.Fragment>
       <AdminAppBar>
@@ -273,6 +323,40 @@ const AccountManager = () => {
                 fontSize: '0.875rem'}}
           > 
             Auto Login All
+          </Button>
+          <Button
+                        variant="contained"
+                        startIcon={<SaveAltIcon />}
+                        onClick={handleSaveSymbolList}
+                        disabled={loading === "saveSymbolList"}
+                        sx={{
+                          py: 0.5,
+                          px: 1.5,
+                          textTransform: 'none',
+                          fontSize: '0.875rem'}}
+                      >
+                        {loading === "saveSymbolList" ? (
+                          <CircularProgress size={24} />
+                        ) : (
+                          "Update Symbol List"
+                        )}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<SaveAltIcon />}
+            onClick={handleFetchOptionContracts}
+            disabled={loading === "fetchOptionContracts"}
+            sx={{
+              py: 0.5,
+              px: 1.5,
+              textTransform: 'none',
+              fontSize: '0.875rem'}}
+          >
+            {loading === "fetchOptionContracts" ? (
+              <CircularProgress size={24} />
+            ) : (
+              "Fetch Option Contracts"
+            )}
           </Button>
         </Box>
         
